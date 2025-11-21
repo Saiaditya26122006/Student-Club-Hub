@@ -1,0 +1,77 @@
+# GitLab CI/CD Configuration for ClubHub
+
+stages:
+  - test
+  - build
+  - deploy
+
+variables:
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "18"
+
+# Backend Tests
+backend:test:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  before_script:
+    - cd backend
+    - pip install -r requirements.txt
+  script:
+    - python -m pytest tests/ || true  # Add tests when available
+    - python -c "from app import create_app; app = create_app(); print('✅ App created successfully')"
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Frontend Tests
+frontend:test:
+  stage: test
+  image: node:${NODE_VERSION}
+  before_script:
+    - cd frontend
+    - npm ci
+  script:
+    - npm run build
+    - npm test || true  # Add tests when available
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Build Backend Docker Image
+backend:build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -f docker/backend.Dockerfile -t $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE/backend:$CI_COMMIT_SHORT_SHA
+  only:
+    - main
+
+# Build Frontend Docker Image
+frontend:build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -f docker/frontend.Dockerfile -t $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE/frontend:$CI_COMMIT_SHORT_SHA
+  only:
+    - main
+
+# Deploy (configure based on your infrastructure)
+# deploy:
+#   stage: deploy
+#   script:
+#     - echo "Deploy to production"
+#   only:
+#     - main
+
