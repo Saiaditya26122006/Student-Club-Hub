@@ -185,6 +185,7 @@ export default function Login({ onLogin, initialMode = "login" }) {
         name: registerForm.name,
         email: registerForm.email,
         password: registerForm.password,
+        role: selectedRole,
       });
 
       setMsg("Account created successfully! Please login.");
