@@ -1,4 +1,3 @@
-"""
 """Student Club-Hub API - Application Entry Point
 
 For development: python run.py
