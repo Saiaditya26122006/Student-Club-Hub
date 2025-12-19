@@ -1,0 +1,346 @@
+/* Professional Participant Dashboard - Storm Marble Theme */
+
+/* Page Container */
+.participant-dashboard {
+  min-height: 100vh;
+  background: #f9fafb;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* Main Content Area */
+.participant-main-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  animation: contentFadeIn 0.8s ease-out;
+}
+
+@keyframes contentFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Professional Header */
+.participant-header {
+  margin-bottom: 2.5rem;
+  animation: headerSlideIn 0.6s ease-out;
+}
+
+@keyframes headerSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.participant-header h1 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.participant-header p {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: #6b7280;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* Professional Cards */
+.participant-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.participant-card:hover {
+  border-color: #d1d5db;
+}
+
+/* Stats Cards */
+.participant-stat-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.75rem;
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.participant-stat-card:hover {
+  border-color: #d1d5db;
+}
+
+.participant-stat-value {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 500;
+  color: #111827;
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.participant-stat-label {
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  color: #6b7280;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Professional Buttons */
+.participant-button {
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid #111827;
+  background: #111827;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.participant-button:hover {
+  background: #1f2937;
+  border-color: #1f2937;
+}
+
+.participant-button:active {
+  background: #374151;
+}
+
+.participant-button-secondary {
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.participant-button-secondary:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+/* Professional Input Fields */
+.participant-input {
+  width: 100%;
+  padding: 1rem 1.25rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  transition: border-color 0.2s ease;
+}
+
+.participant-input:focus {
+  outline: none;
+  border-color: #9ca3af;
+  background: #ffffff;
+}
+
+.participant-input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+/* Event Grid */
+.participant-events-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+@media (max-width: 768px) {
+  .participant-events-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+}
+
+/* Club Cards */
+.participant-club-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid #e5e7eb;
+  transition: border-color 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.participant-club-card:hover {
+  border-color: #d1d5db;
+}
+
+.participant-club-title {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+}
+
+.participant-club-description {
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  color: #6b7280;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+/* Professional Typography */
+.participant-section-title {
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.participant-section-subtitle {
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: #6b7280;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+/* Badge Styles */
+.participant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #e5e7eb;
+}
+
+/* Loading States */
+.participant-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Empty States */
+.participant-empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+}
+
+.participant-empty-state h3 {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.participant-empty-state p {
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  color: #6b7280;
+}
+
+/* Search and Filter Bar */
+.participant-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .participant-main-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .participant-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .participant-main-content {
+    padding: 1rem 0.75rem;
+  }
+  
+  .participant-card {
+    padding: 1.25rem;
+    border-radius: 20px;
+  }
+  
+  .participant-stat-card {
+    padding: 1.25rem;
+  }
+}
+
+/* Smooth Scroll */
+.participant-main-content {
+  scroll-behavior: smooth;
+}
+
+/* Focus States for Accessibility */
+.participant-button:focus-visible,
+.participant-button-secondary:focus-visible,
+.participant-input:focus-visible {
+  outline: 3px solid rgba(123, 143, 161, 0.5);
+  outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+  .participant-card,
+  .participant-club-card {
+    border: 1px solid #ccc;
+  }
+}
+

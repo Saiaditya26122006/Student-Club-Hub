@@ -1,0 +1,553 @@
+/* ============================================
+   DESIGN SYSTEM 2025 - MODERN UI ENHANCEMENTS
+   ============================================ */
+
+/* ============================================
+   1. PROGRESSIVE BLUR SYSTEM
+   ============================================ */
+
+:root {
+  --blur-sm: blur(4px);
+  --blur-md: blur(8px);
+  --blur-lg: blur(16px);
+  --blur-xl: blur(24px);
+  --blur-2xl: blur(40px);
+}
+
+.progressive-blur {
+  transition: backdrop-filter 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              filter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progressive-blur-hover:hover {
+  backdrop-filter: var(--blur-md);
+  filter: blur(0.5px);
+}
+
+.progressive-blur-card {
+  backdrop-filter: var(--blur-sm);
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progressive-blur-card:hover {
+  backdrop-filter: var(--blur-lg);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.progressive-blur-modal {
+  backdrop-filter: var(--blur-xl);
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.progressive-blur-bg {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: var(--blur-2xl);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================================
+   2. BENTO GRID LAYOUTS
+   ============================================ */
+
+.bento-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.bento-grid-compact {
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.bento-grid-spacious {
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.bento-item {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  border-radius: 1.5rem;
+  padding: 2rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.bento-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.5), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.bento-item:hover::before {
+  transform: translateX(100%);
+}
+
+.bento-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  border-color: var(--color-border-secondary);
+}
+
+.bento-item-large {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+.bento-item-wide {
+  grid-column: span 2;
+}
+
+.bento-item-tall {
+  grid-row: span 2;
+}
+
+@media (max-width: 768px) {
+  .bento-item-large,
+  .bento-item-wide,
+  .bento-item-tall {
+    grid-column: span 1;
+    grid-row: span 1;
+  }
+}
+
+/* ============================================
+   3. LIGHT RAYS & GLOW ACCENTS
+   ============================================ */
+
+:root {
+  --glow-primary: 0 0 20px rgba(139, 92, 246, 0.4),
+                  0 0 40px rgba(139, 92, 246, 0.2),
+                  0 0 60px rgba(139, 92, 246, 0.1);
+  --glow-secondary: 0 0 20px rgba(59, 130, 246, 0.4),
+                    0 0 40px rgba(59, 130, 246, 0.2);
+  --glow-success: 0 0 20px rgba(16, 185, 129, 0.4),
+                  0 0 40px rgba(16, 185, 129, 0.2);
+}
+
+.glow-primary {
+  box-shadow: var(--glow-primary);
+  position: relative;
+}
+
+.glow-primary::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.6), rgba(59, 130, 246, 0.6));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow-primary:hover::after {
+  opacity: 1;
+}
+
+.glow-secondary {
+  box-shadow: var(--glow-secondary);
+}
+
+.glow-success {
+  box-shadow: var(--glow-success);
+}
+
+.light-ray {
+  position: relative;
+  overflow: hidden;
+}
+
+.light-ray::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 70%
+  );
+  transform: rotate(45deg);
+  animation: lightRay 3s infinite;
+  pointer-events: none;
+}
+
+@keyframes lightRay {
+  0% {
+    transform: translateX(-100%) translateY(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) translateY(100%) rotate(45deg);
+  }
+}
+
+.glow-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.glow-button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* ============================================
+   4. 3D ELEMENTS
+   ============================================ */
+
+.card-3d {
+  transform-style: preserve-3d;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  perspective: 1000px;
+}
+
+.card-3d:hover {
+  transform: translateY(-8px) rotateX(2deg) rotateY(-2deg);
+}
+
+.card-3d-interactive {
+  cursor: pointer;
+}
+
+.card-3d-interactive:active {
+  transform: translateY(-4px) rotateX(1deg) rotateY(-1deg) scale(0.98);
+}
+
+.tile-3d {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  transform: translateZ(0);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tile-3d:hover {
+  transform: translateY(-4px) translateZ(10px);
+  box-shadow: 
+    0 12px 48px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   5. INTERACTIVE OBJECTS & MICRO-ANIMATIONS
+   ============================================ */
+
+.interactive-icon {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  cursor: pointer;
+}
+
+.interactive-icon:hover {
+  transform: scale(1.15) rotate(5deg);
+}
+
+.interactive-icon:active {
+  transform: scale(0.95) rotate(-5deg);
+}
+
+.interactive-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.interactive-card:hover {
+  transform: translateY(-6px) scale(1.02);
+}
+
+.interactive-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.tilt-effect {
+  transition: transform 0.2s ease-out;
+}
+
+.tilt-effect:hover {
+  transform: perspective(1000px) rotateX(2deg) rotateY(2deg);
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(139, 92, 246, 0.8),
+                0 0 60px rgba(139, 92, 246, 0.4);
+  }
+}
+
+/* ============================================
+   6. STORYTELLING & SCROLL ANIMATIONS
+   ============================================ */
+
+.story-reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.story-reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.story-reveal-delay-1 {
+  transition-delay: 0.1s;
+}
+
+.story-reveal-delay-2 {
+  transition-delay: 0.2s;
+}
+
+.story-reveal-delay-3 {
+  transition-delay: 0.3s;
+}
+
+.story-reveal-delay-4 {
+  transition-delay: 0.4s;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stagger-children > * {
+  opacity: 0;
+  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.5s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.6s; }
+
+/* ============================================
+   7. ENHANCED TYPOGRAPHY
+   ============================================ */
+
+.typography-hero {
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #111827 0%, #374151 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.typography-display {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.typography-bold {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ============================================
+   8. ILLUSTRATION CONTAINERS
+   ============================================ */
+
+.illustration-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.illustration-3d {
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.1));
+  transition: transform 0.3s ease;
+}
+
+.illustration-3d:hover {
+  transform: scale(1.05) rotateY(5deg);
+}
+
+/* ============================================
+   9. ENHANCED BUTTONS WITH GLOW
+   ============================================ */
+
+.button-glow {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.button-glow:hover::before {
+  left: 100%;
+}
+
+.button-glow:hover {
+  box-shadow: var(--glow-primary);
+  transform: translateY(-2px);
+}
+
+.button-glow:active {
+  transform: translateY(0);
+}
+
+/* ============================================
+   10. EMOJI SUPPORT
+   ============================================ */
+
+.emoji-inline {
+  display: inline-block;
+  vertical-align: middle;
+  line-height: 1;
+  font-style: normal;
+}
+
+.emoji-large {
+  font-size: 1.5em;
+  line-height: 1;
+}
+
+.emoji-xl {
+  font-size: 2em;
+  line-height: 1;
+}
+
+/* ============================================
+   11. MINIMALIST ENHANCEMENTS
+   ============================================ */
+
+.clean-spacing {
+  padding: 2rem;
+  margin: 0;
+}
+
+.clean-spacing > * + * {
+  margin-top: 1.5rem;
+}
+
+.minimal-border {
+  border: 1px solid var(--color-border-primary);
+  border-radius: 0.75rem;
+}
+
+.minimal-shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================
+   12. RESPONSIVE UTILITIES
+   ============================================ */
+
+@media (max-width: 768px) {
+  .bento-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .typography-hero {
+    font-size: 2.5rem;
+  }
+  
+  .typography-display {
+    font-size: 2rem;
+  }
+}
+
+/* ============================================
+   13. PERFORMANCE OPTIMIZATIONS
+   ============================================ */
+
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
+
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+

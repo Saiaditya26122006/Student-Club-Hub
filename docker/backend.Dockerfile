@@ -1,4 +1,4 @@
-# Backend Dockerfile for ClubHub API
+# Backend Dockerfile for Student Club-Hub API
 FROM python:3.12-slim
 
 # Set working directory

@@ -1,4 +1,4 @@
-# ClubHub API Documentation
+# Student Club-Hub API Documentation
 
 ## Base URL
 ```

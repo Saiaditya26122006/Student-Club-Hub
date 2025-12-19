@@ -12,6 +12,7 @@ import LeaderScanQR from "./pages/leader/LeaderScanQR";
 import ParticipantDashboard from "./pages/participant/ParticipantDashboard";
 import ParticipantCreateClub from "./pages/participant/ParticipantCreateClub";
 import ParticipantMyProposals from "./pages/participant/ParticipantMyProposals";
+import ParticipantEventDetails from "./pages/participant/ParticipantEventDetails";
 import MyProfile from "./pages/participant/MyProfile";
 import LeaderMyProfile from "./pages/leader/MyProfile";
 import UniversityMyProfile from "./pages/university/MyProfile";
@@ -52,7 +53,7 @@ function App() {
     "/university",
     "/university/clubs",
     "/university/profile"
-  ].includes(location.pathname) && !location.pathname.startsWith("/leader/events/");
+  ].includes(location.pathname) && !location.pathname.startsWith("/leader/events/") && !location.pathname.startsWith("/participant/events/");
 
   // Load token + role on first load
   useEffect(() => {
@@ -83,13 +84,15 @@ function App() {
     setIsAuthenticated(true);
   };
 
+  const shellClass = showNavbar ? "ai-shell" : "ai-shell ai-shell--bare";
+
   return (
     <>
       {showNavbar && (
         <Navbar onLogout={isAuthenticated ? handleLogout : null} role={role} />
       )}
 
-      <div className={showNavbar ? "pt-4 px-4" : ""}>
+      <div className={shellClass}>
         <Routes>
           {/* Default route - redirect based on auth status */}
           <Route
@@ -145,6 +148,16 @@ function App() {
             element={
               isAuthenticated && role === "participant" ? (
                 <MyProfile onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/participant/events/:eventId"
+            element={
+              isAuthenticated && role === "participant" ? (
+                <ParticipantEventDetails onLogout={handleLogout} />
               ) : (
                 <Navigate to="/login" replace />
               )

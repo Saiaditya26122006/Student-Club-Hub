@@ -1,5 +1,5 @@
 """
-ClubHub API - Complete Single-File Application
+Student Club-Hub API - Complete Single-File Application
 
 This is a consolidated version of all backend Python code for hackathon submission.
 All models, routes, utilities, and configuration are in this single file.
@@ -26,7 +26,7 @@ from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, get_jwt
-from sqlalchemy import ForeignKey, text, func, case, extract, or_, and_
+from sqlalchemy import ForeignKey, text, func, case, extract, or_, and_, inspect
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -98,10 +98,64 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.String(200), nullable=True)  # Nullable for OAuth users
     role = db.Column(db.String(20), nullable=False)
     profile_image = db.Column(db.String(500), nullable=True)
     bio = db.Column(db.String(500), nullable=True)
+    # OAuth fields
+    provider = db.Column(db.String(50), nullable=True)  # 'google', 'facebook', 'linkedin', or None
+    provider_id = db.Column(db.String(200), nullable=True)  # OAuth provider's user ID
+    # Reminder preferences - TEMPORARILY COMMENTED OUT until columns are added to database
+    # Uncomment these after running the SQL migration script
+    # phone_number = db.Column(db.String(20), nullable=True)  # For WhatsApp/SMS
+    # reminder_email_enabled = db.Column(db.Boolean, default=True, nullable=False)
+    # reminder_whatsapp_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    # reminder_sms_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    
+    # Temporary properties that return defaults until columns exist
+    @property
+    def phone_number(self):
+        return getattr(self, '_phone_number', None)
+    
+    @phone_number.setter
+    def phone_number(self, value):
+        try:
+            setattr(self, '_phone_number', value)
+        except:
+            pass
+    
+    @property
+    def reminder_email_enabled(self):
+        return getattr(self, '_reminder_email_enabled', True)
+    
+    @reminder_email_enabled.setter
+    def reminder_email_enabled(self, value):
+        try:
+            setattr(self, '_reminder_email_enabled', value)
+        except:
+            pass
+    
+    @property
+    def reminder_whatsapp_enabled(self):
+        return getattr(self, '_reminder_whatsapp_enabled', False)
+    
+    @reminder_whatsapp_enabled.setter
+    def reminder_whatsapp_enabled(self, value):
+        try:
+            setattr(self, '_reminder_whatsapp_enabled', value)
+        except:
+            pass
+    
+    @property
+    def reminder_sms_enabled(self):
+        return getattr(self, '_reminder_sms_enabled', False)
+    
+    @reminder_sms_enabled.setter
+    def reminder_sms_enabled(self, value):
+        try:
+            setattr(self, '_reminder_sms_enabled', value)
+        except:
+            pass
 
     def to_dict(self):
         return {
@@ -241,6 +295,204 @@ class ClubRequest(db.Model):
     )
 
 
+class Friend(db.Model):
+    """Friend connections between users."""
+    __tablename__ = "friends"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    friend_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    status = db.Column(db.String(20), default="pending")  # pending, accepted, blocked
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship("User", foreign_keys=[user_id], backref="friendships")
+    friend = db.relationship("User", foreign_keys=[friend_id])
+
+
+class ParticipantStats(db.Model):
+    """Participant statistics and gamification."""
+    __tablename__ = "participant_stats"
+    
+    user_id = db.Column(db.Integer, ForeignKey("users.id"), primary_key=True)
+    points = db.Column(db.Integer, default=0, nullable=False)
+    events_attended = db.Column(db.Integer, default=0, nullable=False)
+    events_registered = db.Column(db.Integer, default=0, nullable=False)
+    current_streak = db.Column(db.Integer, default=0, nullable=False)
+    longest_streak = db.Column(db.Integer, default=0, nullable=False)
+    last_event_date = db.Column(db.Date, nullable=True)
+    favorite_category = db.Column(db.String(50), nullable=True)
+    total_check_ins = db.Column(db.Integer, default=0, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = db.relationship("User", backref=db.backref("stats", uselist=False))
+
+
+class Badge(db.Model):
+    """Badge achievements for participants."""
+    __tablename__ = "badges"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    badge_type = db.Column(db.String(50), nullable=False)  # first_event, streak_7, streak_30, etc.
+    badge_name = db.Column(db.String(100), nullable=False)
+    badge_description = db.Column(db.String(200), nullable=True)
+    earned_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship("User", backref="badges")
+
+
+class EventCollection(db.Model):
+    """User-created event collections/lists."""
+    __tablename__ = "event_collections"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(300), nullable=True)
+    color = db.Column(db.String(20), default="#3b82f6")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship("User", backref="event_collections")
+    events = db.relationship("Event", secondary="collection_events", backref="collections")
+
+
+class CollectionEvent(db.Model):
+    """Association table for events in collections."""
+    __tablename__ = "collection_events"
+    
+    collection_id = db.Column(db.Integer, ForeignKey("event_collections.id"), primary_key=True)
+    event_id = db.Column(db.Integer, ForeignKey("events.id"), primary_key=True)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class EventReview(db.Model):
+    """Reviews and ratings for events."""
+    __tablename__ = "event_reviews"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(db.Integer, ForeignKey("events.id"), nullable=False)
+    user_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # 1-5
+    review_text = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    event = db.relationship("Event", backref="reviews")
+    user = db.relationship("User", backref="reviews")
+
+
+class EventReminder(db.Model):
+    """Event reminders for participants."""
+    __tablename__ = "event_reminders"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    event_id = db.Column(db.Integer, ForeignKey("events.id"), nullable=False)
+    reminder_time = db.Column(db.DateTime, nullable=False)
+    reminder_type = db.Column(db.String(20), default="email")  # email, push, sms
+    sent = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship("User", backref="reminders")
+    event = db.relationship("Event", backref="reminders")
+
+
+class UniversityCalendarEvent(db.Model):
+    """University calendar events imported by users."""
+    __tablename__ = "university_calendar_events"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=False)
+    location = db.Column(db.String(200), nullable=True)
+    calendar_url = db.Column(db.String(500), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    user = db.relationship("User", backref="university_calendar_events")
+
+
+class UniversityOfficialCalendar(db.Model):
+    """Official university calendar uploaded by university admin."""
+    __tablename__ = "university_official_calendar"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    university_id = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    calendar_name = db.Column(db.String(200), nullable=False)
+    calendar_url = db.Column(db.String(500), nullable=True)  # For iCal URL sync
+    uploaded_file_path = db.Column(db.String(500), nullable=True)  # For file upload
+    last_synced = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    university = db.relationship("User", backref="official_calendars")
+    events = db.relationship("UniversityOfficialCalendarEvent", backref="calendar", lazy=True, cascade="all, delete-orphan")
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "calendar_name": self.calendar_name,
+            "calendar_url": self.calendar_url,
+            "last_synced": str(self.last_synced),
+            "created_at": str(self.created_at),
+            "events_count": len(self.events) if self.events else 0
+        }
+
+
+class UniversityOfficialCalendarEvent(db.Model):
+    """Events from the official university calendar."""
+    __tablename__ = "university_official_calendar_events"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    calendar_id = db.Column(db.Integer, ForeignKey("university_official_calendar.id"), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    start_datetime = db.Column(db.DateTime, nullable=False)
+    end_datetime = db.Column(db.DateTime, nullable=False)
+    location = db.Column(db.String(200), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "start_datetime": str(self.start_datetime),
+            "end_datetime": str(self.end_datetime),
+            "location": self.location,
+            "date": str(self.start_datetime.date()),
+            "time": str(self.start_datetime.time())
+        }
+
+
+class ClubCalendarPermission(db.Model):
+    """Tracks which clubs have permission to view university calendar."""
+    __tablename__ = "club_calendar_permissions"
+    
+    id = db.Column(db.Integer, primary_key=True)
+    club_id = db.Column(db.Integer, ForeignKey("clubs.id"), nullable=False)
+    calendar_id = db.Column(db.Integer, ForeignKey("university_official_calendar.id"), nullable=False)
+    granted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    granted_by = db.Column(db.Integer, ForeignKey("users.id"), nullable=False)
+    
+    club = db.relationship("Club", backref="calendar_permissions")
+    calendar = db.relationship("UniversityOfficialCalendar", backref="club_permissions")
+    granter = db.relationship("User", foreign_keys=[granted_by])
+    
+    __table_args__ = (db.UniqueConstraint('club_id', 'calendar_id', name='_club_calendar_uc'),)
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "club_id": self.club_id,
+            "club_name": self.club.name if self.club else None,
+            "calendar_id": self.calendar_id,
+            "granted_at": str(self.granted_at)
+        }
+
+
 # ============================================================================
 # SECTION 4: UTILITY FUNCTIONS
 # ============================================================================
@@ -279,6 +531,18 @@ def university_required(fn):
     return decorator
 
 
+def leader_required(fn):
+    """Decorator to require leader role."""
+    @wraps(fn)
+    @jwt_required()
+    def decorator(*args, **kwargs):
+        current_user = get_current_user_context()
+        if not current_user or current_user.get("role") != "leader":
+            return jsonify({"error": "Leader role required"}), 403
+        return fn(*args, **kwargs)
+    return decorator
+
+
 def leader_owns_club(leader_id, club_id):
     """Check if a leader owns a specific club."""
     club = Club.query.get(club_id)
@@ -312,7 +576,7 @@ def send_registration_email(participant_email, participant_name, event, qr_path)
             f"You are confirmed for the event \"{event.title}\" scheduled on "
             f"{event.date} at {event.time} in {event.location}.\n\n"
             f"Your QR code is attached. Please present it during check-in.\n\n"
-            "Regards,\nClubHub Team"
+            "Regards,\nStudent Club-Hub Team"
         )
 
         if qr_path and os.path.exists(qr_path):
@@ -338,17 +602,275 @@ def send_registration_email(participant_email, participant_name, event, qr_path)
         return False
 
 
+# ============================================================================
+# REMINDER SERVICE FUNCTIONS
+# ============================================================================
+
+def send_email_reminder(user_email, user_name, event, reminder_type="registration"):
+    """Send email reminder for an event."""
+    try:
+        if not MAIL_SERVER or not MAIL_FROM:
+            print("Email not configured, skipping reminder email")
+            return False
+        
+        msg = EmailMessage()
+        
+        if reminder_type == "registration":
+            msg["Subject"] = f"Reminder: {event.title} - You're Registered!"
+        elif reminder_type == "24h":
+            msg["Subject"] = f"Reminder: {event.title} is Tomorrow!"
+        elif reminder_type == "1h":
+            msg["Subject"] = f"Reminder: {event.title} starts in 1 hour!"
+        else:
+            msg["Subject"] = f"Reminder: {event.title}"
+        
+        msg["From"] = MAIL_FROM
+        msg["To"] = user_email
+        
+        # Get registration for QR code
+        registration = Registration.query.filter_by(
+            event_id=event.id, email=user_email, cancelled=False
+        ).first()
+        
+        qr_attachment = None
+        if registration and registration.qr_code_path and os.path.exists(registration.qr_code_path):
+            with open(registration.qr_code_path, "rb") as f:
+                qr_attachment = f.read()
+        
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h2 style="color: #0ea5e9;">📅 Event Reminder</h2>
+                <p>Hi {user_name},</p>
+                <p>This is a friendly reminder about <strong>{event.title}</strong>!</p>
+                <div style="background-color: #f0f9ff; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Event Details:</h3>
+                    <p><strong>Date:</strong> {event.date}</p>
+                    <p><strong>Time:</strong> {event.time}</p>
+                    <p><strong>Location:</strong> {event.location}</p>
+                    {f'<p><strong>Description:</strong> {event.description}</p>' if event.description else ''}
+                </div>
+                {"<p>Don't forget to bring your QR code for check-in!</p>" if qr_attachment else ""}
+                <p>We look forward to seeing you there!</p>
+                <p style="color: #666; font-size: 12px;">This is an automated reminder from Student Club-Hub.</p>
+            </div>
+        </body>
+        </html>
+        """
+        msg.set_content(html_body, subtype="html")
+        
+        if qr_attachment:
+            msg.add_attachment(qr_attachment, maintype="image", subtype="png", filename="qr_code.png")
+        
+        with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
+            server.ehlo()
+            if MAIL_USE_TLS:
+                server.starttls()
+                server.ehlo()
+            if MAIL_USERNAME and MAIL_PASSWORD:
+                server.login(MAIL_USERNAME, MAIL_PASSWORD)
+            server.send_message(msg)
+        print(f"✅ Reminder email sent to {user_email}")
+        return True
+    except Exception as e:
+        print(f"❌ Email reminder failed: {e}")
+        return False
+
+
+def send_whatsapp_reminder(phone_number, user_name, event, reminder_type="registration"):
+    """Send WhatsApp reminder using Twilio WhatsApp API."""
+    try:
+        # Check if Twilio is configured
+        twilio_account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        twilio_auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        twilio_whatsapp_from = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
+        
+        if not twilio_account_sid or not twilio_auth_token:
+            print("Twilio not configured, skipping WhatsApp reminder")
+            return False
+        
+        try:
+            from twilio.rest import Client
+        except ImportError:
+            print("Twilio library not installed. Install with: pip install twilio")
+            return False
+        
+        client = Client(twilio_account_sid, twilio_auth_token)
+        
+        # Format phone number (add country code if not present)
+        if not phone_number.startswith("+"):
+            phone_number = f"+91{phone_number}"  # Default to India, adjust as needed
+        
+        whatsapp_to = f"whatsapp:{phone_number}"
+        
+        # Create message
+        if reminder_type == "registration":
+            message_body = f"🎉 Hi {user_name}! You're registered for *{event.title}*\n\n"
+        elif reminder_type == "24h":
+            message_body = f"⏰ Reminder: *{event.title}* is tomorrow!\n\n"
+        elif reminder_type == "1h":
+            message_body = f"🚀 *{event.title}* starts in 1 hour!\n\n"
+        else:
+            message_body = f"📅 Reminder: *{event.title}*\n\n"
+        
+        message_body += f"📅 Date: {event.date}\n"
+        message_body += f"⏰ Time: {event.time}\n"
+        message_body += f"📍 Location: {event.location}\n"
+        if event.description:
+            message_body += f"\n{event.description[:100]}...\n"
+        message_body += "\nSee you there! 🎊"
+        
+        message = client.messages.create(
+            body=message_body,
+            from_=twilio_whatsapp_from,
+            to=whatsapp_to
+        )
+        
+        print(f"✅ WhatsApp reminder sent to {phone_number} (SID: {message.sid})")
+        return True
+    except Exception as e:
+        print(f"❌ WhatsApp reminder failed: {e}")
+        return False
+
+
+def send_sms_reminder(phone_number, user_name, event, reminder_type="registration"):
+    """Send SMS reminder using Twilio SMS API."""
+    try:
+        twilio_account_sid = os.getenv("TWILIO_ACCOUNT_SID")
+        twilio_auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+        twilio_sms_from = os.getenv("TWILIO_SMS_FROM")
+        
+        if not twilio_account_sid or not twilio_auth_token or not twilio_sms_from:
+            print("Twilio not configured, skipping SMS reminder")
+            return False
+        
+        try:
+            from twilio.rest import Client
+        except ImportError:
+            print("Twilio library not installed. Install with: pip install twilio")
+            return False
+        
+        client = Client(twilio_account_sid, twilio_auth_token)
+        
+        # Format phone number
+        if not phone_number.startswith("+"):
+            phone_number = f"+91{phone_number}"
+        
+        # Create short message
+        if reminder_type == "registration":
+            message_body = f"Student Club-Hub: You're registered for {event.title} on {event.date} at {event.time}. Location: {event.location}"
+        elif reminder_type == "24h":
+            message_body = f"Reminder: {event.title} is tomorrow at {event.time}. Location: {event.location}"
+        elif reminder_type == "1h":
+            message_body = f"Reminder: {event.title} starts in 1 hour at {event.location}!"
+        else:
+            message_body = f"Reminder: {event.title} on {event.date} at {event.time}. Location: {event.location}"
+        
+        message = client.messages.create(
+            body=message_body,
+            from_=twilio_sms_from,
+            to=phone_number
+        )
+        
+        print(f"✅ SMS reminder sent to {phone_number} (SID: {message.sid})")
+        return True
+    except Exception as e:
+        print(f"❌ SMS reminder failed: {e}")
+        return False
+
+
+def send_event_reminders(user, event, reminder_type="registration", channels=None):
+    """Send reminders through enabled channels for a user."""
+    if channels is None:
+        channels = []
+        if user.reminder_email_enabled:
+            channels.append("email")
+        if user.reminder_whatsapp_enabled and user.phone_number:
+            channels.append("whatsapp")
+        if user.reminder_sms_enabled and user.phone_number:
+            channels.append("sms")
+    
+    results = {"email": False, "whatsapp": False, "sms": False}
+    
+    if "email" in channels and user.reminder_email_enabled:
+        results["email"] = send_email_reminder(
+            user.email, user.name or user.email.split("@")[0], event, reminder_type
+        )
+    
+    if "whatsapp" in channels and user.reminder_whatsapp_enabled and user.phone_number:
+        results["whatsapp"] = send_whatsapp_reminder(
+            user.phone_number, user.name or user.email.split("@")[0], event, reminder_type
+        )
+    
+    if "sms" in channels and user.reminder_sms_enabled and user.phone_number:
+        results["sms"] = send_sms_reminder(
+            user.phone_number, user.name or user.email.split("@")[0], event, reminder_type
+        )
+    
+    return results
+
+
+def create_automatic_reminders(user_id, event_id):
+    """Create automatic reminders for a user's event registration."""
+    try:
+        user = User.query.get(user_id)
+        event = Event.query.get(event_id)
+        
+        if not user or not event:
+            return
+        
+        event_datetime = datetime.combine(event.date, event.time)
+        
+        # Create reminder for 24 hours before
+        reminder_24h = EventReminder(
+            user_id=user_id,
+            event_id=event_id,
+            reminder_time=event_datetime - timedelta(hours=24),
+            reminder_type="email"
+        )
+        db.session.add(reminder_24h)
+        
+        # Create reminder for 1 hour before
+        reminder_1h = EventReminder(
+            user_id=user_id,
+            event_id=event_id,
+            reminder_time=event_datetime - timedelta(hours=1),
+            reminder_type="email"
+        )
+        db.session.add(reminder_1h)
+        
+        db.session.commit()
+        print(f"✅ Automatic reminders created for user {user_id}, event {event_id}")
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ Failed to create automatic reminders: {e}")
+
+
 def ensure_schema():
     """Ensure database schema is up to date with required columns."""
     try:
-        db.session.execute(
-            text("ALTER TABLE registrations ADD COLUMN IF NOT EXISTS cancelled BOOLEAN NOT NULL DEFAULT FALSE")
+        # Use PostgreSQL-compatible syntax
+        try:
+
+            db.session.execute(
+                text("ALTER TABLE registrations ADD COLUMN cancelled BOOLEAN NOT NULL DEFAULT FALSE")
         )
-        db.session.execute(
-            text("ALTER TABLE registrations ADD COLUMN IF NOT EXISTS checked_in BOOLEAN NOT NULL DEFAULT FALSE")
-        )
+        except Exception:
+            pass  # Column might already exist
         
         try:
+
+        
+            db.session.execute(
+                text("ALTER TABLE registrations ADD COLUMN checked_in BOOLEAN NOT NULL DEFAULT FALSE")
+        )
+        except Exception:
+            pass  # Column might already exist
+        
+        try:
+
+        
             db.session.execute(
                 text("ALTER TABLE clubs ADD COLUMN leader_id INTEGER REFERENCES users(id)")
             )
@@ -356,12 +878,15 @@ def ensure_schema():
             pass
         
         try:
+
+        
             db.session.execute(
                 text("ALTER TABLE club_requests ADD COLUMN leader_email VARCHAR(120)")
             )
         except Exception:
             pass
         try:
+
             db.session.execute(
                 text("ALTER TABLE club_requests ADD COLUMN leader_password VARCHAR(120)")
             )
@@ -369,6 +894,8 @@ def ensure_schema():
             pass
         
         try:
+
+        
             db.session.execute(
                 text("ALTER TABLE events ADD COLUMN IF NOT EXISTS poster_image VARCHAR(500)")
             )
@@ -397,8 +924,80 @@ def ensure_schema():
         except Exception:
             pass
         
-        db.session.commit()
-        print("✅ Database schema updated successfully")
+        # Add OAuth columns - MUST run before any User queries
+        try:
+            result = db.session.execute(
+                text("SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='provider'")
+            ).fetchone()
+            if not result:
+                print("Adding OAuth columns: provider, provider_id...")
+                db.session.execute(
+                    text("ALTER TABLE users ADD COLUMN provider VARCHAR(50)")
+                )
+                db.session.execute(
+                    text("ALTER TABLE users ADD COLUMN provider_id VARCHAR(200)")
+                )
+                db.session.commit()
+                print("✅ Added OAuth columns")
+        except Exception as e:
+            print(f"Error adding OAuth columns: {e}")
+            db.session.rollback()
+        
+        # Make password nullable for OAuth users
+        try:
+            result = db.session.execute(
+                text("SELECT is_nullable FROM information_schema.columns WHERE table_name='users' AND column_name='password'")
+            ).fetchone()
+            if result and result[0] == 'NO':
+                print("Making password column nullable for OAuth users...")
+                db.session.execute(
+                    text("ALTER TABLE users ALTER COLUMN password DROP NOT NULL")
+                )
+                db.session.commit()
+                print("✅ Made password column nullable")
+        except Exception as e:
+            print(f"Error making password nullable: {e}")
+            db.session.rollback()
+        
+        # Add reminder preference columns - MUST run before any User queries
+        columns_to_add = [
+            ("phone_number", "VARCHAR(20)", None),
+            ("reminder_email_enabled", "BOOLEAN NOT NULL DEFAULT TRUE", True),
+            ("reminder_whatsapp_enabled", "BOOLEAN NOT NULL DEFAULT FALSE", False),
+            ("reminder_sms_enabled", "BOOLEAN NOT NULL DEFAULT FALSE", False)
+        ]
+        
+        for col_name, col_def, default_val in columns_to_add:
+            try:
+                result = db.session.execute(
+                    text(f"SELECT column_name FROM information_schema.columns WHERE table_name='users' AND column_name='{col_name}'")
+                ).fetchone()
+                if not result:
+                    print(f"Adding column: {col_name}...")
+                    db.session.execute(
+                        text(f"ALTER TABLE users ADD COLUMN {col_name} {col_def}")
+                    )
+                    db.session.commit()
+                    print(f"✅ Added {col_name} column")
+                    
+                    # Update existing rows with default value if needed
+                    if default_val is not None:
+                        try:
+
+                            db.session.execute(
+                                text(f"UPDATE users SET {col_name} = {str(default_val).upper()} WHERE {col_name} IS NULL")
+                            )
+                            db.session.commit()
+                        except:
+                            pass
+                else:
+                    print(f"✓ {col_name} column already exists")
+            except Exception as e:
+                db.session.rollback()
+                print(f"⚠️ Error adding {col_name} column: {e}")
+                # Try to continue with other columns
+        
+        print("✅ Database schema check completed")
     except Exception as schema_err:
         db.session.rollback()
         print(f"Schema check failed: {schema_err}")
@@ -670,7 +1269,7 @@ general_bp = Blueprint("general", __name__)
 def home():
     """API home endpoint."""
     return jsonify({
-        "message": "Welcome to ClubHub API!",
+        "message": "Welcome to Student Club-Hub API!",
         "version": "4.1",
         "endpoints": {
             "auth": ["/api/register", "/api/login"],
@@ -688,6 +1287,7 @@ def home():
 def db_test():
     """Test database connection."""
     try:
+
         db.session.execute(text("SELECT 1"))
         return jsonify({"message": "Database connected successfully!"}), 200
     except Exception as e:
@@ -732,24 +1332,196 @@ def login_user():
     try:
         data = request.get_json(force=True)
         user = User.query.filter_by(email=data.get("email")).first()
-        if user and bcrypt.check_password_hash(user.password, data.get("password")):
-            token = create_access_token(
-                identity=str(user.id),
-                expires_delta=timedelta(days=30),
-                additional_claims={
-                    "email": user.email,
+        
+        if not user:
+            return jsonify({"error": "Invalid credentials"}), 401
+        
+        # Check if user exists and has password (not OAuth-only user)
+        if user.password:
+            if bcrypt.check_password_hash(user.password, data.get("password")):
+                token = create_access_token(
+                    identity=str(user.id),
+                    expires_delta=timedelta(days=30),
+                    additional_claims={
+                        "email": user.email,
+                        "role": user.role,
+                        "name": user.name
+                    }
+                )
+                return jsonify({
+                    "token": token,
                     "role": user.role,
-                    "name": user.name
-                }
-            )
-            return jsonify({
-                "token": token,
-                "role": user.role,
-                "user": {"id": user.id, "name": user.name, "email": user.email}
-            }), 200
+                    "user": {"id": user.id, "name": user.name, "email": user.email}
+                }), 200
+        else:
+            # OAuth-only user trying to login with password
+            return jsonify({"error": "This account was created with social login. Please use social login to sign in."}), 401
+        
         return jsonify({"error": "Invalid credentials"}), 401
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@auth_bp.route("/oauth/<provider>", methods=["POST"])
+def oauth_login(provider):
+    """Handle OAuth login/registration for Google, Facebook, or LinkedIn."""
+    try:
+        data = request.get_json(force=True)
+        
+        # Validate required fields
+        if not data.get("access_token") or not data.get("email"):
+            return jsonify({"error": "Access token and email are required"}), 400
+        
+        access_token = data["access_token"]
+        email = data["email"]
+        name = data.get("name", "")
+        profile_image = data.get("profile_image")
+        provider_id = data.get("provider_id", "")
+        
+        # Validate provider
+        if provider not in ["google", "facebook", "linkedin"]:
+            return jsonify({"error": "Invalid OAuth provider"}), 400
+        
+        # Verify token and get user info from provider
+        user_info = None
+        if provider == "google":
+            user_info = verify_google_token(access_token)
+        elif provider == "facebook":
+            user_info = verify_facebook_token(access_token)
+        elif provider == "linkedin":
+            user_info = verify_linkedin_token(access_token)
+        
+        if not user_info:
+            return jsonify({"error": "Invalid or expired token"}), 401
+        
+        # Check if user already exists
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # Existing user - check if OAuth provider matches
+            if user.provider != provider:
+                return jsonify({
+                    "error": f"This email is already registered with {user.provider or 'email/password'}. Please use that method to sign in."
+                }), 409
+            
+            # Update provider_id if needed
+            if not user.provider_id:
+                user.provider_id = provider_id
+                db.session.commit()
+        else:
+            # New user - create account
+            # OAuth users can only be participants (leaders and universities get assigned credentials)
+            role = "participant"
+            
+            user = User(
+                name=name or user_info.get("name", email.split("@")[0]),
+                email=email,
+                password=None,  # OAuth users don't have passwords
+                role=role,
+                provider=provider,
+                provider_id=provider_id or user_info.get("id", ""),
+                profile_image=profile_image or user_info.get("picture")
+            )
+            db.session.add(user)
+            db.session.commit()
+        
+        # Generate JWT token
+        token = create_access_token(
+            identity=str(user.id),
+            expires_delta=timedelta(days=30),
+            additional_claims={
+                "email": user.email,
+                "role": user.role,
+                "name": user.name
+            }
+        )
+        
+        return jsonify({
+            "token": token,
+            "role": user.role,
+            "user": {
+                "id": user.id,
+                "name": user.name,
+                "email": user.email,
+                "profile_image": user.profile_image
+            },
+            "message": "Login successful" if user.provider else "Registration successful"
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
+
+
+def verify_google_token(access_token):
+    """Verify Google OAuth token and return user info."""
+    try:
+        import requests
+        response = requests.get(
+            f"https://www.googleapis.com/oauth2/v2/userinfo?access_token={access_token}",
+            timeout=10
+        )
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                "id": data.get("id"),
+                "email": data.get("email"),
+                "name": data.get("name"),
+                "picture": data.get("picture")
+            }
+        return None
+    except Exception as e:
+        print(f"Google token verification error: {e}")
+        return None
+
+
+def verify_facebook_token(access_token):
+    """Verify Facebook OAuth token and return user info."""
+    try:
+        import requests
+        response = requests.get(
+            f"https://graph.facebook.com/me?fields=id,name,email,picture&access_token={access_token}",
+            timeout=10
+        )
+        if response.status_code == 200:
+            data = response.json()
+            picture_url = None
+            if data.get("picture") and data["picture"].get("data"):
+                picture_url = data["picture"]["data"].get("url")
+            return {
+                "id": data.get("id"),
+                "email": data.get("email"),
+                "name": data.get("name"),
+                "picture": picture_url
+            }
+        return None
+    except Exception as e:
+        print(f"Facebook token verification error: {e}")
+        return None
+
+
+def verify_linkedin_token(access_token):
+    """Verify LinkedIn OAuth token and return user info."""
+    try:
+        import requests
+        headers = {"Authorization": f"Bearer {access_token}"}
+        response = requests.get(
+            "https://api.linkedin.com/v2/userinfo",
+            headers=headers,
+            timeout=10
+        )
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                "id": data.get("sub"),
+                "email": data.get("email"),
+                "name": data.get("name"),
+                "picture": data.get("picture")
+            }
+        return None
+    except Exception as e:
+        print(f"LinkedIn token verification error: {e}")
+        return None
 
 
 # ============================================================================
@@ -1128,6 +1900,10 @@ def register_for_event_authenticated(event_id):
             )
             qr_generated = True
 
+        # Award points for registration
+        if created:
+            award_points_and_badges(user.id, "register", 10)
+
         if created or qr_generated:
             db.session.commit()
 
@@ -1135,6 +1911,15 @@ def register_for_event_authenticated(event_id):
         send_registration_email(
             registration.email, registration.participant_name, event, registration.qr_code_path
         )
+        
+        # Send automatic reminders on registration
+        if created:
+            # Send immediate reminder via all enabled channels
+            user = User.query.filter_by(email=registration.email).first()
+            if user:
+                send_event_reminders(user, event, reminder_type="registration")
+                # Create scheduled reminders (24h and 1h before)
+                create_automatic_reminders(user.id, event.id)
 
         message = "RSVP confirmed!" if created else "RSVP reactivated and QR resent."
         return jsonify({
@@ -1208,6 +1993,12 @@ def register_for_event():
                 registration, event, registration.participant_name, registration.email
             )
             qr_generated = True
+
+        # Award points for registration
+        if created:
+            user = User.query.filter_by(email=registration.email).first()
+            if user:
+                award_points_and_badges(user.id, "register", 10)
 
         if created or qr_generated:
             db.session.commit()
@@ -1448,6 +2239,98 @@ def leader_event_registrations(event_id):
     }), 200
 
 
+@leader_bp.route("/calendar", methods=["GET"])
+@jwt_required()
+def get_leader_calendar():
+    """Get calendar events for leader including university calendar if club has permission."""
+    current_user = get_current_user_context()
+    if not current_user or current_user.get("role") != "leader":
+        return jsonify({"error": "Leader access required"}), 403
+    
+    user = User.query.get(current_user.get("id"))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    # Get leader's club
+    club = Club.query.filter_by(leader_id=user.id).first()
+    if not club:
+        return jsonify({"error": "No club found for this leader"}), 404
+    
+    # Get club events
+    query = Event.query.filter_by(club_id=club.id)
+    if start_date:
+        query = query.filter(Event.date >= datetime.strptime(start_date, "%Y-%m-%d").date())
+    if end_date:
+        query = query.filter(Event.date <= datetime.strptime(end_date, "%Y-%m-%d").date())
+    
+    events = query.order_by(Event.date, Event.time).all()
+    
+    calendar_events = []
+    
+    # Add club events
+    for event in events:
+        event_datetime = datetime.combine(event.date, event.time)
+        registration_count = Registration.query.filter_by(event_id=event.id, cancelled=False).count()
+        
+        calendar_events.append({
+            "id": event.id,
+            "title": event.title,
+            "date": str(event.date),
+            "time": str(event.time),
+            "datetime": event_datetime.isoformat(),
+            "location": event.location,
+            "club_name": club.name,
+            "club_category": club.category,
+            "description": event.description,
+            "registration_count": registration_count,
+            "type": "clubhub"
+        })
+    
+    # Check if club has permission to view university calendar
+    permissions = ClubCalendarPermission.query.filter_by(club_id=club.id).all()
+    calendar_ids = [p.calendar_id for p in permissions]
+    
+    if calendar_ids:
+        official_events = UniversityOfficialCalendarEvent.query.join(
+            UniversityOfficialCalendar
+        ).filter(
+            UniversityOfficialCalendar.id.in_(calendar_ids)
+        )
+        
+        if start_date:
+            official_events = official_events.filter(
+                UniversityOfficialCalendarEvent.start_datetime >= datetime.strptime(start_date, "%Y-%m-%d")
+            )
+        if end_date:
+            official_events = official_events.filter(
+                UniversityOfficialCalendarEvent.start_datetime <= datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+            )
+        
+        official_calendar_events = official_events.all()
+        
+        for official_event in official_calendar_events:
+            uni_date = official_event.start_datetime.date()
+            uni_time = official_event.start_datetime.time()
+            
+            calendar_events.append({
+                "id": f"official_uni_{official_event.id}",
+                "title": official_event.title,
+                "date": str(uni_date),
+                "time": str(uni_time),
+                "datetime": official_event.start_datetime.isoformat(),
+                "location": official_event.location or "University",
+                "club_name": "Official University Calendar",
+                "club_category": "University",
+                "description": official_event.description,
+                "type": "university"
+            })
+    
+    # Sort by datetime
+    calendar_events.sort(key=lambda x: x["datetime"])
+    
+    return jsonify(calendar_events), 200
+
+
 @leader_bp.route("/check-in/<int:registration_id>", methods=["POST"])
 @jwt_required()
 def check_in_attendee(registration_id):
@@ -1478,6 +2361,12 @@ def check_in_attendee(registration_id):
 
     try:
         registration.checked_in = True
+        
+        # Award points for check-in
+        user = User.query.filter_by(email=registration.email).first()
+        if user:
+            award_points_and_badges(user.id, "check_in", 20)
+        
         db.session.commit()
 
         event = registration.event or Event.query.get(registration.event_id)
@@ -1678,6 +2567,264 @@ def university_revoke_leader(club_id):
         return jsonify({"error": f"Failed to revoke leader access: {str(e)}"}), 500
 
 
+@university_bp.route("/events/calendar", methods=["GET"])
+@university_required
+def get_university_calendar_events():
+    """Get all events from all clubs for university calendar view."""
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    # Get all events from all approved clubs
+    query = Event.query.join(Club).filter(Club.approved == True)
+    if start_date:
+        query = query.filter(Event.date >= datetime.strptime(start_date, "%Y-%m-%d").date())
+    if end_date:
+        query = query.filter(Event.date <= datetime.strptime(end_date, "%Y-%m-%d").date())
+    
+    events = query.order_by(Event.date, Event.time).all()
+    
+    # Get registration counts for each event
+    calendar_events = []
+    for event in events:
+        event_datetime = datetime.combine(event.date, event.time)
+        registration_count = Registration.query.filter_by(event_id=event.id, cancelled=False).count()
+        
+        calendar_events.append({
+            "id": event.id,
+            "title": event.title,
+            "date": str(event.date),
+            "time": str(event.time),
+            "datetime": event_datetime.isoformat(),
+            "location": event.location,
+            "club_name": event.club.name if event.club else "Unknown",
+            "club_category": event.club.category if event.club else None,
+            "description": event.description,
+            "registration_count": registration_count,
+            "type": "clubhub"
+        })
+    
+    return jsonify(calendar_events), 200
+
+
+@university_bp.route("/calendar/upload", methods=["POST"])
+@university_required
+def upload_university_calendar():
+    """Upload or sync university official calendar from file."""
+    current_user = get_current_user_context()
+    university_id = current_user.get("id")
+    
+    # Check if file was uploaded
+    if 'calendar_file' not in request.files:
+        return jsonify({"error": "Calendar file required"}), 400
+    
+    file = request.files['calendar_file']
+    calendar_name = request.form.get("calendar_name", "University Calendar")
+    
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+    
+    # Check if file is .ics format
+    if not file.filename.lower().endswith('.ics'):
+        return jsonify({"error": "Only .ics (iCal) files are supported"}), 400
+    
+    try:
+        # Read file content
+        ical_data = file.read().decode('utf-8')
+        
+        # Check if calendar already exists
+        existing_calendar = UniversityOfficialCalendar.query.filter_by(
+            university_id=university_id,
+            calendar_name=calendar_name
+        ).first()
+        
+        if existing_calendar:
+            calendar = existing_calendar
+            calendar.updated_at = datetime.utcnow()
+        else:
+            calendar = UniversityOfficialCalendar(
+                university_id=university_id,
+                calendar_name=calendar_name,
+                calendar_url=None  # No URL for file uploads
+            )
+            db.session.add(calendar)
+            db.session.flush()  # Get the ID
+        
+        # Delete old events
+        UniversityOfficialCalendarEvent.query.filter_by(calendar_id=calendar.id).delete()
+        
+        # Parse iCal and extract events
+        events_found = []
+        lines = ical_data.split('\n')
+        current_event = {}
+        in_event = False
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Handle line continuation
+            if line.startswith(' ') or line.startswith('\t'):
+                if in_event and current_event:
+                    last_key = list(current_event.keys())[-1] if current_event else None
+                    if last_key:
+                        current_event[last_key] += line.strip()
+                continue
+            
+            if line == "BEGIN:VEVENT":
+                current_event = {}
+                in_event = True
+            elif line == "END:VEVENT":
+                if current_event and current_event.get("title"):
+                    try:
+                        dtstart_str = current_event.get("start", "")
+                        dtend_str = current_event.get("end", "")
+                        
+                        # Parse datetime
+                        if len(dtstart_str) == 8:
+                            start_dt = datetime.strptime(dtstart_str, "%Y%m%d")
+                        elif 'T' in dtstart_str:
+                            if dtstart_str.endswith('Z'):
+                                start_dt = datetime.strptime(dtstart_str.replace('Z', ''), "%Y%m%dT%H%M%S")
+                            else:
+                                start_dt = datetime.strptime(dtstart_str.split('T')[0], "%Y%m%d")
+                        else:
+                            start_dt = datetime.strptime(dtstart_str[:8], "%Y%m%d")
+                        
+                        if len(dtend_str) == 8:
+                            end_dt = datetime.strptime(dtend_str, "%Y%m%d")
+                        elif 'T' in dtend_str:
+                            if dtend_str.endswith('Z'):
+                                end_dt = datetime.strptime(dtend_str.replace('Z', ''), "%Y%m%dT%H%M%S")
+                            else:
+                                end_dt = datetime.strptime(dtend_str.split('T')[0], "%Y%m%d")
+                        else:
+                            end_dt = datetime.strptime(dtend_str[:8], "%Y%m%d")
+                        
+                        # Create event
+                        cal_event = UniversityOfficialCalendarEvent(
+                            calendar_id=calendar.id,
+                            title=current_event.get("title", "University Event"),
+                            description=current_event.get("description", ""),
+                            start_datetime=start_dt,
+                            end_datetime=end_dt,
+                            location=current_event.get("location", "")
+                        )
+                        db.session.add(cal_event)
+                        events_found.append(cal_event.to_dict())
+                    except Exception as parse_err:
+                        print(f"Error parsing event: {parse_err}")
+                        continue
+                current_event = {}
+                in_event = False
+            elif line.startswith("SUMMARY:"):
+                current_event["title"] = line.split(":", 1)[1] if ":" in line else ""
+            elif line.startswith("DTSTART"):
+                dt_part = line.split(":", 1)[1] if ":" in line else ""
+                current_event["start"] = dt_part
+            elif line.startswith("DTEND"):
+                dt_part = line.split(":", 1)[1] if ":" in line else ""
+                current_event["end"] = dt_part
+            elif line.startswith("LOCATION:"):
+                current_event["location"] = line.split(":", 1)[1] if ":" in line else ""
+            elif line.startswith("DESCRIPTION:"):
+                current_event["description"] = line.split(":", 1)[1] if ":" in line else ""
+        
+        calendar.last_synced = datetime.utcnow()
+        db.session.commit()
+        
+        return jsonify({
+            "message": "Calendar uploaded and synced successfully",
+            "calendar": calendar.to_dict(),
+            "events_found": len(events_found),
+            "events": events_found[:10]
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to upload calendar: {str(e)}"}), 500
+
+
+@university_bp.route("/calendar", methods=["GET"])
+@university_required
+def get_university_calendars():
+    """Get all university calendars."""
+    current_user = get_current_user_context()
+    university_id = current_user.get("id")
+    
+    calendars = UniversityOfficialCalendar.query.filter_by(university_id=university_id).all()
+    return jsonify([cal.to_dict() for cal in calendars]), 200
+
+
+@university_bp.route("/clubs/<int:club_id>/calendar-permission", methods=["POST"])
+@university_required
+def grant_calendar_permission(club_id):
+    """Grant calendar permission to a club."""
+    current_user = get_current_user_context()
+    data = request.get_json() or {}
+    calendar_id = data.get("calendar_id")
+    
+    if not calendar_id:
+        return jsonify({"error": "Calendar ID required"}), 400
+    
+    club = Club.query.get(club_id)
+    if not club:
+        return jsonify({"error": "Club not found"}), 404
+    
+    calendar = UniversityOfficialCalendar.query.get(calendar_id)
+    if not calendar:
+        return jsonify({"error": "Calendar not found"}), 404
+    
+    # Check if permission already exists
+    existing = ClubCalendarPermission.query.filter_by(
+        club_id=club_id,
+        calendar_id=calendar_id
+    ).first()
+    
+    if existing:
+        return jsonify({"message": "Permission already granted", "permission": existing.to_dict()}), 200
+    
+    permission = ClubCalendarPermission(
+        club_id=club_id,
+        calendar_id=calendar_id,
+        granted_by=current_user.get("id")
+    )
+    db.session.add(permission)
+    db.session.commit()
+    
+    return jsonify({
+        "message": f"Calendar permission granted to {club.name}",
+        "permission": permission.to_dict()
+    }), 200
+
+
+@university_bp.route("/clubs/<int:club_id>/calendar-permission", methods=["DELETE"])
+@university_required
+def revoke_calendar_permission(club_id):
+    """Revoke calendar permission from a club."""
+    data = request.get_json() or {}
+    calendar_id = data.get("calendar_id")
+    
+    if not calendar_id:
+        return jsonify({"error": "Calendar ID required"}), 400
+    
+    permission = ClubCalendarPermission.query.filter_by(
+        club_id=club_id,
+        calendar_id=calendar_id
+    ).first()
+    
+    if not permission:
+        return jsonify({"error": "Permission not found"}), 404
+    
+    club_name = permission.club.name if permission.club else "Unknown"
+    db.session.delete(permission)
+    db.session.commit()
+    
+    return jsonify({
+        "message": f"Calendar permission revoked from {club_name}"
+    }), 200
+
+
 # ============================================================================
 # SECTION 13: ROUTE BLUEPRINTS - AI FEATURES
 # ============================================================================
@@ -1686,16 +2833,23 @@ ai_bp = Blueprint("ai", __name__)
 
 # Initialize Google Gemini AI
 try:
-    import google.generativeai as genai
-    if GEMINI_API_KEY:
+    import google.generativeai as genai  # type: ignore[import]
+except ImportError:
+    genai = None  # type: ignore[assignment]
+    print("Warning: google-generativeai not installed. Install with: pip install google-generativeai")
+
+if GEMINI_API_KEY and genai:
+    try:
         genai.configure(api_key=GEMINI_API_KEY)
         gemini_model = genai.GenerativeModel('gemini-pro')
-    else:
+    except Exception as genai_err:
         gemini_model = None
-        print("Warning: GEMINI_API_KEY not set in .env file")
-except ImportError:
+        print(f"Warning: Failed to initialize Gemini AI client: {genai_err}")
+elif not GEMINI_API_KEY:
     gemini_model = None
-    print("Warning: google-generativeai not installed. Install with: pip install google-generativeai")
+    print("Warning: GEMINI_API_KEY not set in .env file")
+else:
+    gemini_model = None
 
 
 def generate_fallback_insights(base_analytics, attendance_rate, event_attendance, active_days, category_performance):
@@ -1811,6 +2965,206 @@ def suggest_event_name():
         return jsonify({"suggestions": ideas.strip()}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@ai_bp.route("/event-ideas", methods=["POST"])
+@jwt_required()
+def generate_event_ideas():
+    """Generate comprehensive event ideas using Gemini AI."""
+    current_user = get_current_user_context()
+    if not current_user or current_user.get("role") != "leader":
+        return jsonify({"error": "Access denied. Only leaders can generate event ideas."}), 403
+    
+    data = request.get_json() or {}
+    club_id = data.get("club_id")
+    club_category = data.get("club_category", "General")
+    existing_title = data.get("title", "").strip()
+    existing_description = data.get("description", "").strip()
+    
+    # Get club information if club_id is provided
+    if club_id:
+        try:
+            club = Club.query.get(club_id)
+            if club:
+                club_category = club.category or club_category
+        except Exception:
+            pass
+    
+    # Build comprehensive prompt
+    prompt = f"""You are an expert event planning assistant for a {club_category} club. Generate creative and engaging event ideas.
+
+"""
+    
+    if existing_title or existing_description:
+        prompt += f"""The leader is currently working on an event with:
+- Title: {existing_title if existing_title else "Not yet set"}
+- Description: {existing_description if existing_description else "Not yet set"}
+
+Based on this, provide:
+"""
+    else:
+        prompt += f"""For a {club_category} club, provide:
+"""
+    
+    prompt += """1. 3 creative event title suggestions (short, catchy, under 60 characters each)
+2. A detailed event description (2-3 sentences explaining what participants will experience)
+3. 3-5 key talking points or topics that could be covered
+4. Suggested event format (workshop, seminar, networking, hands-on, etc.)
+5. Target audience description
+6. Any special considerations or tips for success
+
+Format your response as a JSON object with these keys:
+- titles: array of 3 title strings
+- description: string
+- talking_points: array of 3-5 strings
+- format: string
+- target_audience: string
+- tips: string
+
+Make the suggestions practical, engaging, and relevant to a {club_category} club audience."""
+
+    # Generate fallback ideas based on club category
+    def generate_fallback_ideas(category):
+        category_lower = category.lower()
+        
+        # Category-specific suggestions
+        if "tech" in category_lower or "coding" in category_lower or "programming" in category_lower:
+            return {
+                "titles": [
+                    "Tech Talk: Building Modern Web Apps",
+                    "Code Workshop: Python Fundamentals",
+                    "Hackathon Prep Session"
+                ],
+                "description": f"Join us for an engaging {category} event where you'll learn practical skills, network with peers, and explore the latest trends in technology. Perfect for beginners and experienced developers alike.",
+                "talking_points": [
+                    "Introduction to modern development tools",
+                    "Hands-on coding exercises",
+                    "Best practices and industry insights",
+                    "Q&A with experienced developers"
+                ],
+                "format": "Workshop",
+                "target_audience": "Students interested in technology and programming",
+                "tips": "Bring your laptop, prepare questions, and be ready to code!"
+            }
+        elif "art" in category_lower or "design" in category_lower or "creative" in category_lower:
+            return {
+                "titles": [
+                    f"{category} Creative Workshop",
+                    "Design Thinking Session",
+                    "Art & Innovation Meetup"
+                ],
+                "description": f"Explore your creative side at this {category} event. Learn new techniques, share your work, and connect with fellow artists and designers.",
+                "talking_points": [
+                    "Creative techniques and methods",
+                    "Portfolio review and feedback",
+                    "Industry trends in design",
+                    "Collaboration opportunities"
+                ],
+                "format": "Interactive Workshop",
+                "target_audience": "Creative students and design enthusiasts",
+                "tips": "Bring your portfolio or samples of work, and come ready to create!"
+            }
+        elif "business" in category_lower or "entrepreneur" in category_lower or "finance" in category_lower:
+            return {
+                "titles": [
+                    "Entrepreneurship Workshop",
+                    "Business Strategy Session",
+                    "Startup Pitch Night"
+                ],
+                "description": f"Learn about business and entrepreneurship at this {category} event. Network with aspiring entrepreneurs and gain insights from successful founders.",
+                "talking_points": [
+                    "Business model development",
+                    "Pitching and presentation skills",
+                    "Market analysis and research",
+                    "Funding and resources"
+                ],
+                "format": "Seminar/Workshop",
+                "target_audience": "Aspiring entrepreneurs and business-minded students",
+                "tips": "Come with your business ideas and be ready to network!"
+            }
+        elif "sports" in category_lower or "fitness" in category_lower:
+            return {
+                "titles": [
+                    f"{category} Training Session",
+                    "Fitness & Wellness Workshop",
+                    "Sports Strategy Discussion"
+                ],
+                "description": f"Get active and learn about {category} at this engaging event. Improve your skills, meet teammates, and stay fit!",
+                "talking_points": [
+                    "Training techniques and strategies",
+                    "Nutrition and wellness",
+                    "Team building activities",
+                    "Competition preparation"
+                ],
+                "format": "Active Workshop",
+                "target_audience": "Athletes and fitness enthusiasts",
+                "tips": "Wear comfortable clothing and bring water!"
+            }
+        else:
+            # Generic fallback
+            return {
+                "titles": [
+                    f"Engaging {category} Workshop",
+                    f"Interactive {category} Session",
+                    f"{category} Community Meetup"
+                ],
+                "description": f"Join us for an exciting {category} event where you'll learn, network, and connect with like-minded students. Whether you're new to the field or experienced, there's something for everyone.",
+                "talking_points": [
+                    "Introduction to key concepts",
+                    "Practical applications and examples",
+                    "Networking and collaboration",
+                    "Q&A and open discussion"
+                ],
+                "format": "Workshop or Seminar",
+                "target_audience": f"Students interested in {category}",
+                "tips": "Come prepared with questions, bring a notebook, and be ready to engage!"
+            }
+    
+    try:
+        # Try to use Gemini AI if available
+        if gemini_model and GEMINI_API_KEY:
+            ai_response = call_gemini(prompt, max_output_tokens=800)
+            
+            # Try to parse JSON response
+            try:
+                if "{" in ai_response and "}" in ai_response:
+                    start = ai_response.find("{")
+                    end = ai_response.rfind("}") + 1
+                    json_str = ai_response[start:end]
+                    ideas = json.loads(json_str)
+                else:
+                    # Fallback: parse text response
+                    ideas = {
+                        "titles": [],
+                        "description": ai_response[:200] + "..." if len(ai_response) > 200 else ai_response,
+                        "talking_points": [],
+                        "format": "Workshop or Seminar",
+                        "target_audience": "Club members and interested students",
+                        "tips": "Plan ahead and promote early for better attendance"
+                    }
+                    # Try to extract titles from response
+                    lines = ai_response.split("\n")
+                    for line in lines:
+                        if any(keyword in line.lower() for keyword in ["title", "suggestion", "idea"]):
+                            if ":" in line:
+                                title = line.split(":", 1)[1].strip()
+                                if title and len(title) < 100:
+                                    ideas["titles"].append(title)
+                                    if len(ideas["titles"]) >= 3:
+                                        break
+            except json.JSONDecodeError:
+                # Use fallback if JSON parsing fails
+                ideas = generate_fallback_ideas(club_category)
+        else:
+            # Use fallback when Gemini is not available
+            ideas = generate_fallback_ideas(club_category)
+        
+        return jsonify(ideas), 200
+    except Exception as e:
+        error_msg = str(e)
+        # Even if there's an error, provide fallback ideas
+        ideas = generate_fallback_ideas(club_category)
+        return jsonify(ideas), 200
 
 
 @ai_bp.route("/leader-insights", methods=["POST"])
@@ -2400,7 +3754,706 @@ def get_profile_registrations():
 
 
 # ============================================================================
-# SECTION 15: ROUTE BLUEPRINTS - CLUB REQUESTS
+# SECTION 15: ROUTE BLUEPRINTS - PARTICIPANT FEATURES
+# ============================================================================
+
+participant_features_bp = Blueprint("participant_features", __name__)
+
+@participant_features_bp.route("/participant/stats", methods=["GET"])
+@jwt_required()
+def get_participant_stats():
+    """Get participant statistics and analytics."""
+    current_user = get_current_user_context()
+    if not current_user or current_user.get("role") != "participant":
+        return jsonify({"error": "Participant access required"}), 403
+    
+    user_id = current_user.get("id")
+    stats = ParticipantStats.query.filter_by(user_id=user_id).first()
+    
+    if not stats:
+        stats = ParticipantStats(user_id=user_id)
+        db.session.add(stats)
+        db.session.commit()
+    
+    # Get additional analytics
+    user = User.query.get(user_id)
+    registrations = Registration.query.filter_by(email=user.email, cancelled=False).all()
+    checked_in_count = sum(1 for r in registrations if r.checked_in)
+    
+    # Get category breakdown
+    category_counts = {}
+    for reg in registrations:
+        event = Event.query.get(reg.event_id)
+        if event and event.club:
+            category = event.club.category or "Uncategorized"
+            category_counts[category] = category_counts.get(category, 0) + 1
+    
+    favorite_category = max(category_counts.items(), key=lambda x: x[1])[0] if category_counts else None
+    
+    # Get monthly participation
+    monthly_data = {}
+    for reg in registrations:
+        event = Event.query.get(reg.event_id)
+        if event:
+            month_key = event.date.strftime("%Y-%m")
+            monthly_data[month_key] = monthly_data.get(month_key, 0) + 1
+    
+    return jsonify({
+        "points": stats.points,
+        "events_attended": stats.events_attended,
+        "events_registered": stats.events_registered,
+        "current_streak": stats.current_streak,
+        "longest_streak": stats.longest_streak,
+        "total_check_ins": checked_in_count,
+        "favorite_category": favorite_category,
+        "category_breakdown": category_counts,
+        "monthly_participation": monthly_data,
+        "badges_count": Badge.query.filter_by(user_id=user_id).count()
+    }), 200
+
+
+@participant_features_bp.route("/participant/badges", methods=["GET"])
+@jwt_required()
+def get_participant_badges():
+    """Get participant badges."""
+    current_user = get_current_user_context()
+    if not current_user or current_user.get("role") != "participant":
+        return jsonify({"error": "Participant access required"}), 403
+    
+    user_id = current_user.get("id")
+    badges = Badge.query.filter_by(user_id=user_id).order_by(Badge.earned_at.desc()).all()
+    
+    return jsonify([{
+        "id": b.id,
+        "badge_type": b.badge_type,
+        "badge_name": b.badge_name,
+        "badge_description": b.badge_description,
+        "earned_at": str(b.earned_at)
+    } for b in badges]), 200
+
+
+@participant_features_bp.route("/participant/friends", methods=["GET"])
+@jwt_required()
+def get_friends():
+    """Get user's friends list."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    user_id = current_user.get("id")
+    friendships = Friend.query.filter(
+        or_(
+            and_(Friend.user_id == user_id, Friend.status == "accepted"),
+            and_(Friend.friend_id == user_id, Friend.status == "accepted")
+        )
+    ).all()
+    
+    friends = []
+    for f in friendships:
+        friend_user = f.friend if f.user_id == user_id else f.user
+        friends.append({
+            "id": friend_user.id,
+            "name": friend_user.name,
+            "email": friend_user.email,
+            "profile_image": friend_user.profile_image
+        })
+    
+    return jsonify(friends), 200
+
+
+@participant_features_bp.route("/participant/friends/request", methods=["POST"])
+@jwt_required()
+def send_friend_request():
+    """Send a friend request."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    data = request.get_json() or {}
+    friend_email = data.get("email", "").strip()
+    
+    if not friend_email:
+        return jsonify({"error": "Email required"}), 400
+    
+    user_id = current_user.get("id")
+    friend_user = User.query.filter_by(email=friend_email).first()
+    
+    if not friend_user:
+        return jsonify({"error": "User not found"}), 404
+    
+    if friend_user.id == user_id:
+        return jsonify({"error": "Cannot add yourself as friend"}), 400
+    
+    # Check if friendship already exists
+    existing = Friend.query.filter(
+        or_(
+            and_(Friend.user_id == user_id, Friend.friend_id == friend_user.id),
+            and_(Friend.user_id == friend_user.id, Friend.friend_id == user_id)
+        )
+    ).first()
+    
+    if existing:
+        return jsonify({"error": "Friendship already exists"}), 400
+    
+    friendship = Friend(user_id=user_id, friend_id=friend_user.id, status="pending")
+    db.session.add(friendship)
+    db.session.commit()
+    
+    return jsonify({"message": "Friend request sent"}), 200
+
+
+@participant_features_bp.route("/participant/collections", methods=["GET"])
+@jwt_required()
+def get_collections():
+    """Get user's event collections."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    user_id = current_user.get("id")
+    collections = EventCollection.query.filter_by(user_id=user_id).order_by(EventCollection.created_at.desc()).all()
+    
+    return jsonify([{
+        "id": c.id,
+        "name": c.name,
+        "description": c.description,
+        "color": c.color,
+        "event_count": len(c.events),
+        "created_at": str(c.created_at)
+    } for c in collections]), 200
+
+
+@participant_features_bp.route("/participant/collections", methods=["POST"])
+@jwt_required()
+def create_collection():
+    """Create a new event collection."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    data = request.get_json() or {}
+    name = data.get("name", "").strip()
+    description = data.get("description", "").strip()
+    color = data.get("color", "#3b82f6")
+    
+    if not name:
+        return jsonify({"error": "Collection name required"}), 400
+    
+    user_id = current_user.get("id")
+    collection = EventCollection(user_id=user_id, name=name, description=description, color=color)
+    db.session.add(collection)
+    db.session.commit()
+    
+    return jsonify({
+        "id": collection.id,
+        "name": collection.name,
+        "description": collection.description,
+        "color": collection.color
+    }), 201
+
+
+@participant_features_bp.route("/participant/collections/<int:collection_id>/events/<int:event_id>", methods=["POST"])
+@jwt_required()
+def add_event_to_collection(collection_id, event_id):
+    """Add event to collection."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    collection = EventCollection.query.get(collection_id)
+    if not collection or collection.user_id != current_user.get("id"):
+        return jsonify({"error": "Collection not found"}), 404
+    
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+    
+    if event not in collection.events:
+        collection.events.append(event)
+        db.session.commit()
+    
+    return jsonify({"message": "Event added to collection"}), 200
+
+
+@participant_features_bp.route("/participant/events/<int:event_id>/review", methods=["POST"])
+@jwt_required()
+def submit_event_review(event_id):
+    """Submit a review for an event."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    data = request.get_json() or {}
+    rating = data.get("rating")
+    review_text = data.get("review_text", "").strip()
+    
+    if not rating or rating < 1 or rating > 5:
+        return jsonify({"error": "Rating must be between 1 and 5"}), 400
+    
+    user_id = current_user.get("id")
+    event = Event.query.get(event_id)
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+    
+    # Check if user registered for this event
+    user = User.query.get(user_id)
+    registration = Registration.query.filter_by(event_id=event_id, email=user.email).first()
+    if not registration:
+        return jsonify({"error": "You must register for the event to review it"}), 400
+    
+    # Check if review already exists
+    existing_review = EventReview.query.filter_by(event_id=event_id, user_id=user_id).first()
+    if existing_review:
+        existing_review.rating = rating
+        existing_review.review_text = review_text
+    else:
+        review = EventReview(event_id=event_id, user_id=user_id, rating=rating, review_text=review_text)
+        db.session.add(review)
+    
+    db.session.commit()
+    return jsonify({"message": "Review submitted"}), 200
+
+
+@participant_features_bp.route("/participant/events/<int:event_id>/reviews", methods=["GET"])
+def get_event_reviews(event_id):
+    """Get reviews for an event."""
+    reviews = EventReview.query.filter_by(event_id=event_id).order_by(EventReview.created_at.desc()).all()
+    
+    return jsonify([{
+        "id": r.id,
+        "user_name": r.user.name,
+        "rating": r.rating,
+        "review_text": r.review_text,
+        "created_at": str(r.created_at)
+    } for r in reviews]), 200
+
+
+@participant_features_bp.route("/participant/events/calendar", methods=["GET"])
+@jwt_required()
+def get_calendar_events():
+    """Get events in calendar format with conflict detection."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    user = User.query.get(current_user.get("id"))
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    # Get all events
+    query = Event.query
+    if start_date:
+        query = query.filter(Event.date >= datetime.strptime(start_date, "%Y-%m-%d").date())
+    if end_date:
+        query = query.filter(Event.date <= datetime.strptime(end_date, "%Y-%m-%d").date())
+    
+    events = query.order_by(Event.date, Event.time).all()
+    
+    # Get user's registrations
+    registrations = {r.event_id: r for r in Registration.query.filter_by(email=user.email, cancelled=False).all()}
+    
+    # Get user's personal university calendar events
+    uni_events = UniversityCalendarEvent.query.filter_by(user_id=user.id).all()
+    
+    # Get official university calendar events if user's registered clubs have permission
+    user_registrations = Registration.query.filter_by(email=user.email, cancelled=False).all()
+    registered_club_ids = set()
+    for reg in user_registrations:
+        event = Event.query.get(reg.event_id)
+        if event and event.club_id:
+            registered_club_ids.add(event.club_id)
+    
+    # Check if any registered clubs have calendar permission
+    official_calendar_events = []
+    if registered_club_ids:
+        permissions = ClubCalendarPermission.query.filter(
+            ClubCalendarPermission.club_id.in_(registered_club_ids)
+        ).all()
+        
+        calendar_ids = [p.calendar_id for p in permissions]
+        if calendar_ids:
+            official_events = UniversityOfficialCalendarEvent.query.join(
+                UniversityOfficialCalendar
+            ).filter(
+                UniversityOfficialCalendar.id.in_(calendar_ids)
+            )
+            
+            if start_date:
+                official_events = official_events.filter(
+                    UniversityOfficialCalendarEvent.start_datetime >= datetime.strptime(start_date, "%Y-%m-%d")
+                )
+            if end_date:
+                official_events = official_events.filter(
+                    UniversityOfficialCalendarEvent.start_datetime <= datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+                )
+            
+            official_calendar_events = official_events.all()
+    
+    calendar_events = []
+    registered_event_times = []
+    
+    # Add ClubHub events
+    for event in events:
+        event_datetime = datetime.combine(event.date, event.time)
+        is_registered = event.id in registrations
+        has_conflict = False
+        
+        if is_registered:
+            registered_event_times.append(event_datetime)
+            # Check for conflicts with other registered events
+            for other_time in registered_event_times:
+                if other_time != event_datetime and abs((other_time - event_datetime).total_seconds()) < 3600:
+                    has_conflict = True
+                    break
+        
+        calendar_events.append({
+            "id": event.id,
+            "title": event.title,
+            "date": str(event.date),
+            "time": str(event.time),
+            "datetime": event_datetime.isoformat(),
+            "location": event.location,
+            "club_name": event.club.name if event.club else "Unknown",
+            "club_category": event.club.category if event.club else None,
+            "description": event.description,
+            "is_registered": is_registered,
+            "has_conflict": has_conflict,
+            "registration_id": registrations[event.id].id if is_registered else None,
+            "type": "clubhub"
+        })
+    
+    # Add user's personal university calendar events
+    for uni_event in uni_events:
+        uni_date = uni_event.start_datetime.date()
+        uni_time = uni_event.start_datetime.time()
+        
+        calendar_events.append({
+            "id": f"uni_{uni_event.id}",
+            "title": uni_event.title,
+            "date": str(uni_date),
+            "time": str(uni_time),
+            "datetime": uni_event.start_datetime.isoformat(),
+            "location": uni_event.location or "University",
+            "club_name": "University Calendar",
+            "club_category": "University",
+            "description": uni_event.description,
+            "is_registered": False,
+            "has_conflict": False,
+            "type": "university"
+        })
+    
+    # Add official university calendar events
+    for official_event in official_calendar_events:
+        uni_date = official_event.start_datetime.date()
+        uni_time = official_event.start_datetime.time()
+        
+        calendar_events.append({
+            "id": f"official_uni_{official_event.id}",
+            "title": official_event.title,
+            "date": str(uni_date),
+            "time": str(uni_time),
+            "datetime": official_event.start_datetime.isoformat(),
+            "location": official_event.location or "University",
+            "club_name": "Official University Calendar",
+            "club_category": "University",
+            "description": official_event.description,
+            "is_registered": False,
+            "has_conflict": False,
+            "type": "university"
+        })
+    
+    # Sort by datetime
+    calendar_events.sort(key=lambda x: x["datetime"])
+    
+    return jsonify(calendar_events), 200
+
+
+@participant_features_bp.route("/participant/events/calendar/export", methods=["GET"])
+@jwt_required()
+def export_calendar_ical():
+    """Export user's registered events as iCal format."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    user = User.query.get(current_user.get("id"))
+    registrations = Registration.query.filter_by(email=user.email, cancelled=False).all()
+    
+    # Generate iCal content
+    ical_content = "BEGIN:VCALENDAR\r\n"
+    ical_content += "VERSION:2.0\r\n"
+    ical_content += "PRODID:-//Student Club-Hub//Event Calendar//EN\r\n"
+    ical_content += "CALSCALE:GREGORIAN\r\n"
+    ical_content += "METHOD:PUBLISH\r\n"
+    ical_content += "X-WR-CALNAME:Student Club-Hub Events\r\n"
+    ical_content += "X-WR-CALDESC:My registered Student Club-Hub events\r\n"
+    
+    for reg in registrations:
+        event = Event.query.get(reg.event_id)
+        if not event:
+            continue
+        
+        # Format datetime for iCal
+        event_dt = datetime.combine(event.date, event.time)
+        dtstart = event_dt.strftime("%Y%m%dT%H%M%S")
+        dtend = (event_dt + timedelta(hours=2)).strftime("%Y%m%dT%H%M%S")  # Assume 2 hour duration
+        dtstamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        
+        # Escape special characters in iCal
+        def escape_ical(text):
+            if not text:
+                return ""
+            return text.replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")
+        
+        ical_content += "BEGIN:VEVENT\r\n"
+        ical_content += f"UID:studentclubhub-{reg.id}@studentclubhub.com\r\n"
+        ical_content += f"DTSTART:{dtstart}\r\n"
+        ical_content += f"DTEND:{dtend}\r\n"
+        ical_content += f"DTSTAMP:{dtstamp}\r\n"
+        ical_content += f"SUMMARY:{escape_ical(event.title)}\r\n"
+        ical_content += f"DESCRIPTION:{escape_ical(event.description or 'Student Club-Hub Event')}\r\n"
+        ical_content += f"LOCATION:{escape_ical(event.location)}\r\n"
+        ical_content += f"ORGANIZER;CN={escape_ical(event.club.name if event.club else 'Student Club-Hub')}:MAILTO:noreply@studentclubhub.com\r\n"
+        ical_content += "STATUS:CONFIRMED\r\n"
+        ical_content += "SEQUENCE:0\r\n"
+        ical_content += "END:VEVENT\r\n"
+    
+    ical_content += "END:VCALENDAR\r\n"
+    
+    from flask import Response
+    response = Response(
+        ical_content,
+        mimetype="text/calendar; charset=utf-8",
+        headers={
+            "Content-Disposition": f"attachment; filename=student-clubhub-events-{datetime.now().strftime('%Y%m%d')}.ics",
+            "Content-Type": "text/calendar; charset=utf-8"
+        }
+    )
+    return response
+
+
+@participant_features_bp.route("/participant/events/calendar/university-sync", methods=["POST"])
+@jwt_required()
+def sync_university_calendar():
+    """Sync with university calendar system."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    data = request.get_json() or {}
+    calendar_url = data.get("calendar_url", "").strip()
+    calendar_type = data.get("type", "ical")  # ical, google, outlook
+    
+    if not calendar_url:
+        return jsonify({"error": "Calendar URL required"}), 400
+    
+    user_id = current_user.get("id")
+    
+    try:
+        # For iCal URL, fetch and parse
+        if calendar_type == "ical":
+            import urllib.request
+            import urllib.error
+            
+            try:
+                with urllib.request.urlopen(calendar_url, timeout=10) as response:
+                    ical_data = response.read().decode('utf-8')
+            except urllib.error.URLError as e:
+                return jsonify({"error": f"Failed to fetch calendar: {str(e)}"}), 400
+            
+            # Parse iCal and extract events
+            events_found = []
+            lines = ical_data.split('\n')
+            current_event = {}
+            in_event = False
+            
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                    
+                # Handle line continuation (iCal format)
+                if line.startswith(' ') or line.startswith('\t'):
+                    if in_event and current_event:
+                        # Continue previous line
+                        last_key = list(current_event.keys())[-1] if current_event else None
+                        if last_key:
+                            current_event[last_key] += line.strip()
+                    continue
+                
+                if line == "BEGIN:VEVENT":
+                    current_event = {}
+                    in_event = True
+                elif line == "END:VEVENT":
+                    if current_event and current_event.get("title"):
+                        # Parse datetime
+                        try:
+                            dtstart_str = current_event.get("start", "")
+                            dtend_str = current_event.get("end", "")
+                            
+                            # Handle different iCal datetime formats
+                            if len(dtstart_str) == 8:  # YYYYMMDD
+                                start_dt = datetime.strptime(dtstart_str, "%Y%m%d")
+                            elif 'T' in dtstart_str:
+                                if dtstart_str.endswith('Z'):
+                                    start_dt = datetime.strptime(dtstart_str.replace('Z', ''), "%Y%m%dT%H%M%S")
+                                else:
+                                    start_dt = datetime.strptime(dtstart_str.split('T')[0], "%Y%m%d")
+                            else:
+                                start_dt = datetime.strptime(dtstart_str[:8], "%Y%m%d")
+                            
+                            if len(dtend_str) == 8:  # YYYYMMDD
+                                end_dt = datetime.strptime(dtend_str, "%Y%m%d")
+                            elif 'T' in dtend_str:
+                                if dtend_str.endswith('Z'):
+                                    end_dt = datetime.strptime(dtend_str.replace('Z', ''), "%Y%m%dT%H%M%S")
+                                else:
+                                    end_dt = datetime.strptime(dtend_str.split('T')[0], "%Y%m%d")
+                            else:
+                                end_dt = datetime.strptime(dtend_str[:8], "%Y%m%d")
+                            
+                            # Save to database
+                            uni_event = UniversityCalendarEvent(
+                                user_id=user_id,
+                                title=current_event.get("title", "University Event"),
+                                description=current_event.get("description", ""),
+                                start_datetime=start_dt,
+                                end_datetime=end_dt,
+                                location=current_event.get("location", ""),
+                                calendar_url=calendar_url
+                            )
+                            db.session.add(uni_event)
+                            events_found.append({
+                                "title": uni_event.title,
+                                "start": str(uni_event.start_datetime),
+                                "end": str(uni_event.end_datetime),
+                                "location": uni_event.location
+                            })
+                        except Exception as parse_err:
+                            print(f"Error parsing event: {parse_err}")
+                            continue
+                    current_event = {}
+                    in_event = False
+                elif line.startswith("SUMMARY:"):
+                    current_event["title"] = line.split(":", 1)[1] if ":" in line else ""
+                elif line.startswith("DTSTART"):
+                    dt_part = line.split(":", 1)[1] if ":" in line else ""
+                    current_event["start"] = dt_part
+                elif line.startswith("DTEND"):
+                    dt_part = line.split(":", 1)[1] if ":" in line else ""
+                    current_event["end"] = dt_part
+                elif line.startswith("LOCATION:"):
+                    current_event["location"] = line.split(":", 1)[1] if ":" in line else ""
+                elif line.startswith("DESCRIPTION:"):
+                    current_event["description"] = line.split(":", 1)[1] if ":" in line else ""
+            
+            db.session.commit()
+            
+            return jsonify({
+                "message": "University calendar synced successfully",
+                "events_found": len(events_found),
+                "events": events_found[:10]  # Return first 10 for preview
+            }), 200
+        
+        elif calendar_type == "google":
+            return jsonify({
+                "message": "Google Calendar sync",
+                "instructions": "To sync Google Calendar:\n1. Open Google Calendar\n2. Go to Settings > Calendars\n3. Click on your calendar\n4. Copy the 'Public URL to iCal format'\n5. Paste it here"
+            }), 200
+        
+        elif calendar_type == "outlook":
+            return jsonify({
+                "message": "Outlook Calendar sync",
+                "instructions": "To sync Outlook Calendar:\n1. Open Outlook Calendar\n2. Go to Calendar Settings\n3. Find 'Publish Calendar'\n4. Copy the iCal link\n5. Paste it here"
+            }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to sync calendar: {str(e)}"}), 500
+
+
+@participant_features_bp.route("/participant/events/calendar/university-sync", methods=["DELETE"])
+@jwt_required()
+def remove_university_calendar():
+    """Remove synced university calendar events."""
+    current_user = get_current_user_context()
+    if not current_user:
+        return jsonify({"error": "Authentication required"}), 401
+    
+    user_id = current_user.get("id")
+    
+    try:
+        deleted_count = UniversityCalendarEvent.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
+        
+        return jsonify({
+            "message": "University calendar removed successfully",
+            "events_removed": deleted_count
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to remove calendar: {str(e)}"}), 500
+
+
+# Helper function to award points and check badges
+def award_points_and_badges(user_id, action_type, points_amount):
+    """Award points and check for badge achievements."""
+    stats = ParticipantStats.query.filter_by(user_id=user_id).first()
+    if not stats:
+        stats = ParticipantStats(user_id=user_id, points=0, events_registered=0, events_attended=0)
+        db.session.add(stats)
+    
+    # Ensure points and counters are not None
+    if stats.points is None:
+        stats.points = 0
+    if stats.events_registered is None:
+        stats.events_registered = 0
+    if stats.events_attended is None:
+        stats.events_attended = 0
+    
+    stats.points += points_amount
+    stats.events_registered += 1 if action_type == "register" else 0
+    stats.events_attended += 1 if action_type == "check_in" else 0
+    
+    # Check for badges
+    if action_type == "register" and stats.events_registered == 1:
+        badge = Badge(user_id=user_id, badge_type="first_event", badge_name="First Event", 
+                     badge_description="Registered for your first event!")
+        db.session.add(badge)
+    
+    if action_type == "check_in":
+        # Update streak
+        today = date.today()
+        if stats.current_streak is None:
+            stats.current_streak = 0
+        if stats.last_event_date:
+            days_diff = (today - stats.last_event_date).days
+            if days_diff == 1:
+                stats.current_streak += 1
+            elif days_diff > 1:
+                stats.current_streak = 1
+        else:
+            stats.current_streak = 1
+        
+        stats.last_event_date = today
+        if stats.current_streak > stats.longest_streak:
+            stats.longest_streak = stats.current_streak
+        
+        # Check for streak badges
+        if stats.current_streak == 7:
+            badge = Badge(user_id=user_id, badge_type="streak_7", badge_name="Week Warrior",
+                         badge_description="7-day attendance streak!")
+            db.session.add(badge)
+        elif stats.current_streak == 30:
+            badge = Badge(user_id=user_id, badge_type="streak_30", badge_name="Monthly Master",
+                         badge_description="30-day attendance streak!")
+            db.session.add(badge)
+    
+    db.session.commit()
+
+
+# ============================================================================
+# SECTION 16: ROUTE BLUEPRINTS - CLUB REQUESTS
 # ============================================================================
 
 club_requests_bp = Blueprint("club_requests", __name__)
@@ -2517,6 +4570,100 @@ def create_app():
     jwt = JWTManager(app)
     
     # Register blueprints
+    # Reminder endpoints blueprint
+    reminders_bp = Blueprint("reminders", __name__)
+    
+    @reminders_bp.route("/events/<int:event_id>/send-reminders", methods=["POST"])
+    @jwt_required()
+    @leader_required
+    def send_event_reminders_endpoint(event_id):
+        """Send reminders to all registered participants for an event (Leader only)."""
+        current_user = get_current_user_context()
+        event = Event.query.get(event_id)
+        
+        if not event:
+            return jsonify({"error": "Event not found"}), 404
+        
+        # Verify leader owns the event's club
+        if not leader_owns_club(current_user.get("id"), event.club_id):
+            return jsonify({"error": "You can only send reminders for your own events"}), 403
+        
+        data = request.get_json() or {}
+        channels = data.get("channels", ["email"])  # Default to email
+        reminder_type = data.get("reminder_type", "manual")
+        custom_message = data.get("message", "")
+        
+        # Get all registrations for this event
+        registrations = Registration.query.filter_by(
+            event_id=event_id, cancelled=False
+        ).all()
+        
+        results = {
+            "total": len(registrations),
+            "sent": {"email": 0, "whatsapp": 0, "sms": 0},
+            "failed": {"email": 0, "whatsapp": 0, "sms": 0}
+        }
+        
+        for registration in registrations:
+            user = User.query.filter_by(email=registration.email).first()
+            if user:
+                reminder_results = send_event_reminders(user, event, reminder_type, channels)
+                for channel, success in reminder_results.items():
+                    if success:
+                        results["sent"][channel] += 1
+                    else:
+                        results["failed"][channel] += 1
+        
+        return jsonify({
+            "message": "Reminders sent",
+            "results": results
+        }), 200
+    
+    @reminders_bp.route("/reminder-preferences", methods=["GET", "PUT"])
+    @jwt_required()
+    def manage_reminder_preferences():
+        """Get or update user reminder preferences."""
+        current_user = get_current_user_context()
+        user = User.query.get(current_user.get("id"))
+        
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        
+        if request.method == "GET":
+            return jsonify({
+                "phone_number": user.phone_number,
+                "reminder_email_enabled": user.reminder_email_enabled,
+                "reminder_whatsapp_enabled": user.reminder_whatsapp_enabled,
+                "reminder_sms_enabled": user.reminder_sms_enabled
+            }), 200
+        
+        # PUT - Update preferences
+        data = request.get_json() or {}
+        
+        if "phone_number" in data:
+            user.phone_number = data["phone_number"]
+        if "reminder_email_enabled" in data:
+            user.reminder_email_enabled = bool(data["reminder_email_enabled"])
+        if "reminder_whatsapp_enabled" in data:
+            user.reminder_whatsapp_enabled = bool(data["reminder_whatsapp_enabled"])
+        if "reminder_sms_enabled" in data:
+            user.reminder_sms_enabled = bool(data["reminder_sms_enabled"])
+        
+        try:
+            db.session.commit()
+            return jsonify({
+                "message": "Reminder preferences updated",
+                "preferences": {
+                    "phone_number": user.phone_number,
+                    "reminder_email_enabled": user.reminder_email_enabled,
+                    "reminder_whatsapp_enabled": user.reminder_whatsapp_enabled,
+                    "reminder_sms_enabled": user.reminder_sms_enabled
+                }
+            }), 200
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"error": str(e)}), 500
+    
     app.register_blueprint(general_bp)
     app.register_blueprint(auth_bp, url_prefix="/api")
     app.register_blueprint(clubs_bp, url_prefix="/api")
@@ -2528,6 +4675,8 @@ def create_app():
     app.register_blueprint(ai_bp, url_prefix="/api/ai")
     app.register_blueprint(club_requests_bp, url_prefix="/api")
     app.register_blueprint(profile_bp, url_prefix="/api/profile")
+    app.register_blueprint(participant_features_bp, url_prefix="/api")
+    app.register_blueprint(reminders_bp, url_prefix="/api")
     
     # Initialize database schema
     with app.app_context():
@@ -2539,5 +4688,5 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    print("✅ ClubHub API v4.1 running at http://127.0.0.1:5000")
+    print("✅ Student Club-Hub API v4.1 running at http://127.0.0.1:5000")
     app.run(debug=True, host="0.0.0.0", port=5000)

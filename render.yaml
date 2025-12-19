@@ -1,0 +1,55 @@
+services:
+  # Backend API Service
+  - type: web
+    name: clubhub-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && python run.py"
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: MAIL_SERVER
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_USE_TLS
+        value: "true"
+      - key: PYTHON_VERSION
+        value: "3.11.0"
+
+  # PostgreSQL Database
+  - type: pserv
+    name: clubhub-db
+    env: docker
+    plan: free
+    region: oregon
+    image: postgres:15
+    envVars:
+      - key: POSTGRES_USER
+        value: clubhub_user
+      - key: POSTGRES_PASSWORD
+        generateValue: true
+      - key: POSTGRES_DB
+        value: clubhub_db
+
+  # Frontend Static Site
+  - type: web
+    name: clubhub-frontend
+    env: static
+    region: oregon
+    plan: free
+    buildCommand: "cd frontend && npm install && npm run build"
+    staticPublishPath: frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://clubhub-backend.onrender.com

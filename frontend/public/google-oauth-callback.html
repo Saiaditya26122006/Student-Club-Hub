@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google OAuth Callback</title>
+</head>
+<body>
+    <script>
+        // Extract access token from URL hash
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        const error = params.get('error');
+
+        if (error) {
+            // Send error to parent window
+            window.opener.postMessage({
+                type: 'GOOGLE_OAUTH_ERROR',
+                error: error
+            }, window.location.origin);
+            window.close();
+        } else if (accessToken) {
+            // Fetch user info
+            fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`)
+                .then(res => res.json())
+                .then(userInfo => {
+                    // Send success to parent window
+                    window.opener.postMessage({
+                        type: 'GOOGLE_OAUTH_SUCCESS',
+                        accessToken: accessToken,
+                        userInfo: userInfo
+                    }, window.location.origin);
+                    window.close();
+                })
+                .catch(err => {
+                    window.opener.postMessage({
+                        type: 'GOOGLE_OAUTH_ERROR',
+                        error: 'Failed to fetch user information'
+                    }, window.location.origin);
+                    window.close();
+                });
+        } else {
+            window.opener.postMessage({
+                type: 'GOOGLE_OAUTH_ERROR',
+                error: 'No access token received'
+            }, window.location.origin);
+            window.close();
+        }
+    </script>
+</body>
+</html>
+

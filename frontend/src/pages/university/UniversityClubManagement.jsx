@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../api";
+import Loader from "../../components/Loader";
+import "../../styles/DarkPattern.css";
+import "../../styles/DesignSystem.css";
 
 export default function UniversityClubManagement() {
   const navigate = useNavigate();
@@ -11,6 +14,9 @@ export default function UniversityClubManagement() {
   const [actionType, setActionType] = useState(""); // "delete" or "revoke"
   const [processing, setProcessing] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [universityCalendars, setUniversityCalendars] = useState([]);
+  const [showCalendarPermissionModal, setShowCalendarPermissionModal] = useState(false);
+  const [selectedCalendarForPermission, setSelectedCalendarForPermission] = useState(null);
 
   useEffect(() => {
     setMounted(true);
@@ -18,7 +24,46 @@ export default function UniversityClubManagement() {
 
   useEffect(() => {
     fetchClubs();
+    fetchUniversityCalendars();
   }, []);
+
+  async function fetchUniversityCalendars() {
+    try {
+      const response = await API.get("/api/university/calendar");
+      setUniversityCalendars(Array.isArray(response.data) ? response.data : []);
+    } catch (err) {
+      console.error("Error fetching university calendars:", err);
+      setUniversityCalendars([]);
+    }
+  }
+
+  async function handleGrantCalendarPermission(clubId, calendarId) {
+    try {
+      await API.post(`/api/university/clubs/${clubId}/calendar-permission`, {
+        calendar_id: calendarId
+      });
+      alert("Calendar permission granted successfully!");
+      setShowCalendarPermissionModal(false);
+      setSelectedCalendarForPermission(null);
+      fetchClubs();
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Failed to grant permission.";
+      alert(errorMsg);
+    }
+  }
+
+  async function handleRevokeCalendarPermission(clubId, calendarId) {
+    try {
+      await API.delete(`/api/university/clubs/${clubId}/calendar-permission`, {
+        data: { calendar_id: calendarId }
+      });
+      alert("Calendar permission revoked successfully!");
+      fetchClubs();
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Failed to revoke permission.";
+      alert(errorMsg);
+    }
+  }
 
   async function fetchClubs() {
     try {
@@ -76,21 +121,18 @@ export default function UniversityClubManagement() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <div className="container flex justify-center items-center min-h-screen">
         <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin h-20 w-20 border-4 border-indigo-200 border-t-indigo-600 rounded-full mx-auto mb-6"></div>
-            <div className="absolute inset-0 animate-ping h-20 w-20 border-4 border-indigo-400 rounded-full mx-auto opacity-20"></div>
-          </div>
-          <p className="text-2xl font-bold text-gray-800 mb-2">Loading Clubs</p>
-          <p className="text-gray-600">Fetching club data...</p>
+          <Loader text="Loading" className="mx-auto mb-6" />
+          <p className="text-2xl font-bold text-white mb-2">Loading Clubs</p>
+          <p className="text-gray-300">Fetching club data...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+    <div className="container min-h-screen relative overflow-hidden">
       <style>{`
         @keyframes fadeInUp {
           from {
@@ -271,6 +313,20 @@ export default function UniversityClubManagement() {
                 </div>
 
                 <div className="space-y-2">
+                  {universityCalendars.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setSelectedClub(club);
+                        setShowCalendarPermissionModal(true);
+                      }}
+                      className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Grant Calendar Permission
+                    </button>
+                  )}
                   {club.leader_email && (
                     <button
                       onClick={() => {
@@ -418,6 +474,67 @@ export default function UniversityClubManagement() {
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Calendar Permission Modal */}
+        {showCalendarPermissionModal && selectedClub && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 animate-fadeIn backdrop-blur-sm">
+            <div className="glass-effect rounded-2xl shadow-2xl max-w-md w-full p-8 animate-scaleIn">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-3xl font-bold text-gray-900">
+                  Grant Calendar Permission
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowCalendarPermissionModal(false);
+                    setSelectedCalendarForPermission(null);
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition"
+                >
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  Select a calendar to grant permission to <strong>{selectedClub.name}</strong>:
+                </p>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {universityCalendars.map((cal) => (
+                    <button
+                      key={cal.id}
+                      onClick={() => {
+                        setSelectedCalendarForPermission(cal.id);
+                        handleGrantCalendarPermission(selectedClub.id, cal.id);
+                      }}
+                      className={`w-full p-4 rounded-xl border-2 transition-all ${
+                        selectedCalendarForPermission === cal.id
+                          ? "bg-blue-50 border-blue-500"
+                          : "bg-white border-gray-200 hover:border-blue-300"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="text-left">
+                          <h4 className="font-bold text-gray-900">{cal.calendar_name}</h4>
+                          <p className="text-sm text-gray-600">{cal.events_count} events</p>
+                        </div>
+                        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {universityCalendars.length === 0 && (
+                  <p className="text-center text-gray-500 py-8">
+                    No calendars uploaded. Please upload a calendar first.
+                  </p>
+                )}
               </div>
             </div>
           </div>

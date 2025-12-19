@@ -1,8 +1,8 @@
-# ClubHub Features Documentation
+# Student Club-Hub Features Documentation
 
 ## Overview
 
-ClubHub is a comprehensive event management system designed for college clubs. It provides two distinct user experiences: one for club leaders and one for participants.
+Student Club-Hub is a comprehensive event management system designed for college clubs. It provides two distinct user experiences: one for club leaders and one for participants.
 
 ---
 

@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import API from "../../api";
+import "../../styles/DarkPattern.css";
+import "../../styles/DesignSystem.css";
 
 export default function LeaderEditEvent() {
   const { eventId } = useParams();
@@ -24,6 +26,8 @@ export default function LeaderEditEvent() {
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
+  const [showCanvaModal, setShowCanvaModal] = useState(false);
+  const [canvaDesignUrl, setCanvaDesignUrl] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -197,21 +201,21 @@ export default function LeaderEditEvent() {
 
   if (loadingEvent) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="container min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="relative">
             <div className="animate-spin h-20 w-20 border-4 border-gray-200 border-t-green-600 rounded-full mx-auto mb-6"></div>
             <div className="absolute inset-0 animate-ping h-20 w-20 border-4 border-green-400 rounded-full mx-auto opacity-20"></div>
           </div>
-          <p className="text-2xl font-bold text-gray-800 mb-2">Loading Event</p>
-          <p className="text-gray-600">Fetching event details...</p>
+          <p className="text-2xl font-bold text-white mb-2">Loading Event</p>
+          <p className="text-gray-300">Fetching event details...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="container min-h-screen">
       <style>{`
         @keyframes fadeInUp {
           from {
@@ -409,6 +413,22 @@ export default function LeaderEditEvent() {
               Event Poster (Optional)
             </label>
             
+            {/* Poster Creation Options */}
+            <div className="mb-4 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => setShowCanvaModal(true)}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white minimal-rounded font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95 flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Create with Canva
+              </button>
+              <span className="text-sm text-gray-500 flex items-center">or</span>
+              <span className="text-sm text-gray-600 font-medium">Upload your own poster</span>
+            </div>
+            
             {/* File Upload Area */}
             <div
               onDragEnter={handleDrag}
@@ -604,6 +624,177 @@ export default function LeaderEditEvent() {
             </button>
           </div>
         </form>
+
+        {/* Canva Modal */}
+        {showCanvaModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 animate-fadeIn backdrop-blur-sm">
+            <div className="glass-effect minimal-rounded shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto animate-scaleIn border border-gray-200">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 minimal-rounded flex items-center justify-center">
+                      <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">Create Poster with Canva</h2>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowCanvaModal(false);
+                      setCanvaDesignUrl("");
+                    }}
+                    className="p-2 hover:bg-gray-100 minimal-rounded transition"
+                  >
+                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Instructions */}
+                  <div className="bg-blue-50 border-2 border-blue-200 minimal-rounded p-4">
+                    <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      How to Create Your Poster
+                    </h3>
+                    <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+                      <li>Click the button below to open Canva in a new window</li>
+                      <li>Create your event poster using Canva's design tools</li>
+                      <li>When finished, download your design as PNG or JPG</li>
+                      <li>Return here and upload the downloaded file</li>
+                    </ol>
+                  </div>
+
+                  {/* Canva Link Button */}
+                  <div className="text-center">
+                    <a
+                      href="https://www.canva.com/create/posters/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white minimal-rounded font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                    >
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                      Open Canva Design Editor
+                    </a>
+                    <p className="text-xs text-gray-500 mt-2">Opens in a new window</p>
+                  </div>
+
+                  {/* Alternative: Canva Template Links */}
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="font-bold text-gray-900 mb-4 text-center">Quick Start Templates</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { name: "Event Poster", url: "https://www.canva.com/templates/EAE8xJ1b5F8-event-poster/" },
+                        { name: "Workshop Flyer", url: "https://www.canva.com/templates/EAE8xJ1b5F8-event-poster/" },
+                        { name: "Conference Banner", url: "https://www.canva.com/templates/EAE8xJ1b5F8-event-poster/" }
+                      ].map((template, idx) => (
+                        <a
+                          key={idx}
+                          href={template.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-4 border-2 border-gray-200 minimal-rounded hover:border-purple-400 hover:shadow-md transition-all duration-300 text-center group"
+                        >
+                          <div className="w-16 h-16 bg-gradient-to-br from-purple-100 to-pink-100 minimal-rounded mx-auto mb-2 flex items-center justify-center group-hover:from-purple-200 group-hover:to-pink-200 transition-colors">
+                            <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <p className="text-sm font-semibold text-gray-900">{template.name}</p>
+                          <p className="text-xs text-gray-500 mt-1">Use template</p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Upload Area for Canva Design */}
+                  <div className="border-t border-gray-200 pt-6">
+                    <h3 className="font-bold text-gray-900 mb-4">Upload Your Canva Design</h3>
+                    <div
+                      onDragEnter={handleDrag}
+                      onDragLeave={handleDrag}
+                      onDragOver={handleDrag}
+                      onDrop={handleDrop}
+                      className={`relative border-2 border-dashed minimal-rounded p-8 text-center transition-all duration-300 ${
+                        dragActive
+                          ? "border-purple-500 bg-purple-50 scale-[1.02]"
+                          : "border-gray-300 bg-gray-50 hover:border-purple-400 hover:bg-purple-50"
+                      } ${uploading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                    >
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg,image/gif,image/webp"
+                        onChange={handleFileInputChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={uploading}
+                        id="canva-upload-edit"
+                      />
+                      
+                      {uploading ? (
+                        <div className="flex flex-col items-center gap-3">
+                          <svg className="animate-spin h-8 w-8 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <p className="text-sm font-semibold text-purple-700">Uploading design...</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <svg className="w-12 h-12 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              Drop your Canva design here or click to browse
+                            </p>
+                            <p className="text-xs text-gray-600 mt-1">
+                              PNG or JPG format (recommended: 1080x1920px or 1920x1080px)
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {form.poster_image && (
+                      <div className="mt-4 p-4 bg-green-50 border-2 border-green-200 minimal-rounded">
+                        <p className="text-sm font-semibold text-green-900 mb-2 flex items-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Design uploaded successfully!
+                        </p>
+                        <img 
+                          src={form.poster_image.startsWith('/') ? `http://localhost:5000${form.poster_image}` : form.poster_image} 
+                          alt="Canva design preview" 
+                          className="w-full h-48 object-contain rounded-lg shadow-md mt-2"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Close Button */}
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => {
+                        setShowCanvaModal(false);
+                        setCanvaDesignUrl("");
+                      }}
+                      className="px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 minimal-rounded font-semibold transition-colors"
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Warning Notice */}
         <div className={`mt-8 glass-effect rounded-2xl p-6 shadow-lg border-l-4 border-yellow-500 ${mounted ? 'animate-fadeIn delay-200' : 'initial-hidden'}`}>

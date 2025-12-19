@@ -1,4 +1,4 @@
-# 🎓 ClubHub - Intelligent Student Club Management Platform
+# 🎓 Student Club-Hub - Intelligent Student Club Management Platform
 
 <div align="center">
 
@@ -37,7 +37,7 @@
 
 ## 🎯 Overview
 
-**ClubHub** is an enterprise-grade, full-stack web application revolutionizing how educational institutions manage student clubs, organize events, and engage participants. Built with modern best practices, the platform combines powerful analytics, AI-driven insights, and intuitive user interfaces to create a seamless experience for all stakeholders.
+**Student Club-Hub** is an enterprise-grade, full-stack web application revolutionizing how educational institutions manage student clubs, organize events, and engage participants. Built with modern best practices, the platform combines powerful analytics, AI-driven insights, and intuitive user interfaces to create a seamless experience for all stakeholders.
 
 ### 🏆 Problem Statement
 
@@ -50,7 +50,7 @@ Traditional club management systems suffer from:
 
 ### ✨ Our Solution
 
-ClubHub addresses these challenges with:
+Student Club-Hub addresses these challenges with:
 - ✅ Centralized platform for all club activities
 - ✅ Automated QR code-based check-in system
 - ✅ Real-time analytics and performance metrics
@@ -549,8 +549,8 @@ This project is created for the **IIT Challenge** submission.
 <div align="center">
 
 **Developed by:** TALLURI SAI ADITYA  
-**Institution:** IIT  
-**Challenge:** IIT Challenge
+**Institution:** Eada Business School  
+**Challenge:** IIT Challenge Gitlab
 
 </div>
 

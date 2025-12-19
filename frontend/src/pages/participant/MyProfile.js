@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../api";
+import Loader from "../../components/Loader";
+import "../../styles/DesignSystem.css";
 
 export default function MyProfile({ onLogout }) {
   const navigate = useNavigate();
@@ -139,54 +141,130 @@ export default function MyProfile({ onLogout }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <svg className="animate-spin h-12 w-12 text-blue-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <p className="text-gray-600 font-semibold">Loading your profile...</p>
+          <Loader text="" className="mx-auto mb-8" />
+          <p className="ds-body-large text-gray-600 font-medium">Loading your profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      {/* Header */}
-      <div className="bg-white shadow-md border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <div className="min-h-screen bg-blue-50">
+      <style>{`
+        /* Domino Spinner Animation */
+        .spinner {
+          position: relative;
+          width: 60px;
+          height: 60px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          border-radius: 50%;
+          margin: 0 auto;
+        }
+        
+        .spinner span {
+          position: absolute;
+          top: 50%;
+          left: var(--left);
+          width: 35px;
+          height: 7px;
+          background: #3b82f6;
+          animation: dominos 1s ease infinite;
+          box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.2);
+          border-radius: 4px;
+        }
+        
+        .spinner span:nth-child(1) {
+          --left: 80px;
+          animation-delay: 0.125s;
+        }
+        
+        .spinner span:nth-child(2) {
+          --left: 70px;
+          animation-delay: 0.3s;
+        }
+        
+        .spinner span:nth-child(3) {
+          left: 60px;
+          animation-delay: 0.425s;
+        }
+        
+        .spinner span:nth-child(4) {
+          animation-delay: 0.54s;
+          left: 50px;
+        }
+        
+        .spinner span:nth-child(5) {
+          animation-delay: 0.665s;
+          left: 40px;
+        }
+        
+        .spinner span:nth-child(6) {
+          animation-delay: 0.79s;
+          left: 30px;
+        }
+        
+        .spinner span:nth-child(7) {
+          animation-delay: 0.915s;
+          left: 20px;
+        }
+        
+        .spinner span:nth-child(8) {
+          left: 10px;
+        }
+        
+        @keyframes dominos {
+          50% {
+            opacity: 0.7;
+          }
+          75% {
+            -webkit-transform: rotate(90deg);
+            transform: rotate(90deg);
+          }
+          80% {
+            opacity: 1;
+          }
+        }
+      `}</style>
+      {/* Colorful Header - Enhanced 2025 UI */}
+      <div className="bg-indigo-500 shadow-lg progressive-blur-card light-ray glow-primary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate("/participant")}
-                className="p-2 hover:bg-gray-100 rounded-lg transition"
+                className="ds-button ds-button-ghost ds-button-sm text-white interactive-icon"
               >
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                <svg className="ds-icon ds-icon-md ds-icon-inverse" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+              <h1 className="typography-hero text-white emoji-inline">
+                My Profile <span className="emoji-xl">👤</span>
+              </h1>
             </div>
             <button
               onClick={onLogout}
-              className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition"
+              className="ds-button ds-button-secondary ds-button-md button-glow"
             >
-              Logout
+              <span className="ds-body">Logout</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Profile Card */}
-        <div className={`bg-white rounded-2xl shadow-xl overflow-hidden ${mounted ? 'animate-fadeIn' : ''}`}>
-          {/* Profile Header */}
-          <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-32 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Profile Card - Enhanced 2025 UI */}
+        <div className={`ds-card card-3d progressive-blur-card light-ray glow-primary overflow-hidden story-reveal ${mounted ? 'visible' : ''}`}>
+          {/* Profile Header - 3D Effect */}
+          <div className="bg-indigo-500 h-32 relative progressive-blur">
             <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2">
               <div className="relative">
-                {/* Profile Image */}
-                <div className="w-32 h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-gradient-to-br from-blue-400 to-purple-400 flex items-center justify-center">
+                {/* Profile Image - 3D Tile */}
+                <div className="w-32 h-32 rounded-full border-4 border-white shadow-2xl overflow-hidden bg-blue-500 flex items-center justify-center tile-3d interactive-icon">
                   {getProfileImageUrl() ? (
                     <img
                       src={getProfileImageUrl()}
@@ -198,8 +276,8 @@ export default function MyProfile({ onLogout }) {
                   )}
                 </div>
                 
-                {/* Upload Button */}
-                <label className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center cursor-pointer shadow-lg transition transform hover:scale-110">
+                {/* Upload Button - Interactive Icon */}
+                <label className="absolute bottom-0 right-0 w-12 h-12 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center cursor-pointer shadow-lg glow-secondary interactive-icon">
                   <input
                     type="file"
                     accept="image/*"
@@ -208,14 +286,16 @@ export default function MyProfile({ onLogout }) {
                     disabled={uploading}
                   />
                   {uploading ? (
-                    <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                    <div className="spinner" style={{ width: '20px', height: '20px', margin: 0 }}>
+                      <span style={{ width: '8px', height: '3px', background: 'white' }}></span>
+                      <span style={{ width: '8px', height: '3px', background: 'white' }}></span>
+                      <span style={{ width: '8px', height: '3px', background: 'white' }}></span>
+                      <span style={{ width: '8px', height: '3px', background: 'white' }}></span>
+                    </div>
                   ) : (
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <svg className="ds-icon ds-icon-sm text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   )}
                 </label>
@@ -229,35 +309,35 @@ export default function MyProfile({ onLogout }) {
             <div className="text-center mb-6">
               {editMode ? (
                 <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
+                  <div className="ds-form-group">
+                    <label className="ds-label">Full Name</label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500"
+                      className="ds-input ds-input-md"
                       placeholder="Enter your name"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Bio</label>
+                  <div className="ds-form-group">
+                    <label className="ds-label">Bio</label>
                     <textarea
                       value={formData.bio}
                       onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                      className="w-full px-4 py-2 border-2 border-gray-300 rounded-xl focus:outline-none focus:border-blue-500"
+                      className="ds-input ds-input-md"
                       placeholder="Tell us about yourself..."
                       rows="4"
                       maxLength="500"
                     />
-                    <p className="text-xs text-gray-500 mt-1">{formData.bio.length}/500 characters</p>
+                    <p className="ds-caption mt-2">{formData.bio.length}/500 characters</p>
                   </div>
-                  <div className="flex gap-3 justify-center">
+                  <div className="flex gap-4 justify-center mt-8">
                     <button
                       onClick={handleSaveProfile}
                       disabled={saving}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition disabled:opacity-50"
+                      className="ds-button ds-button-primary ds-button-md disabled:opacity-50"
                     >
-                      {saving ? "Saving..." : "Save Changes"}
+                      <span className="ds-body">{saving ? "Saving..." : "Save Changes"}</span>
                     </button>
                     <button
                       onClick={() => {
@@ -267,70 +347,163 @@ export default function MyProfile({ onLogout }) {
                           bio: profile?.bio || ""
                         });
                       }}
-                      className="px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-xl transition"
+                      className="ds-button ds-button-secondary ds-button-md"
                     >
-                      Cancel
+                      <span className="ds-body">Cancel</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">{profile?.name || "User"}</h2>
-                  <p className="text-gray-600 mb-4">{profile?.email}</p>
+                  <h2 className="typography-hero mb-6">{profile?.name || "User"}</h2>
+                  <p className="typography-display text-gray-600 mb-8">{profile?.email}</p>
                   {profile?.bio && (
-                    <p className="text-gray-700 max-w-2xl mx-auto leading-relaxed">{profile.bio}</p>
+                    <p className="ds-body-large text-gray-700 max-w-2xl mx-auto mb-10">{profile.bio}</p>
                   )}
                   <button
                     onClick={() => setEditMode(true)}
-                    className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition inline-flex items-center gap-2"
+                    className="ds-button ds-button-primary ds-button-md button-glow inline-flex items-center gap-3"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    <svg className="ds-icon ds-icon-sm ds-icon-inverse interactive-icon" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    Edit Profile
+                    <span className="ds-body emoji-inline">Edit Profile <span className="emoji-large">✏️</span></span>
                   </button>
                 </>
               )}
             </div>
 
-            {/* Stats */}
+            {/* Stats - Bento Grid with 3D */}
             {profile?.stats && (
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center border-2 border-blue-200">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">{profile.stats.total_registrations || 0}</div>
-                  <div className="text-sm font-semibold text-blue-800">Total Events</div>
+              <div className="bento-grid mb-12">
+                <div className="bento-item card-3d tile-3d bg-blue-50 border-2 border-blue-200 p-8 text-center glow-secondary story-reveal story-reveal-delay-1">
+                  <div className="typography-hero text-blue-600 mb-6">{profile.stats.total_registrations || 0}</div>
+                  <div className="ds-body-large font-medium text-blue-800 emoji-inline">Total Events <span className="emoji-large">📅</span></div>
                 </div>
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 text-center border-2 border-green-200">
-                  <div className="text-3xl font-bold text-green-600 mb-2">{profile.stats.events_attended || 0}</div>
-                  <div className="text-sm font-semibold text-green-800">Attended</div>
+                <div className="bento-item card-3d tile-3d bg-green-50 border-2 border-green-200 p-8 text-center glow-success story-reveal story-reveal-delay-2">
+                  <div className="typography-hero text-green-600 mb-6">{profile.stats.events_attended || 0}</div>
+                  <div className="ds-body-large font-medium text-green-800 emoji-inline">Attended <span className="emoji-large">✅</span></div>
                 </div>
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 text-center border-2 border-purple-200">
-                  <div className="text-3xl font-bold text-purple-600 mb-2">{profile.stats.upcoming_events || 0}</div>
-                  <div className="text-sm font-semibold text-purple-800">Upcoming</div>
+                <div className="bento-item card-3d tile-3d bg-purple-50 border-2 border-purple-200 p-8 text-center glow-primary story-reveal story-reveal-delay-3">
+                  <div className="typography-hero text-purple-600 mb-6">{profile.stats.upcoming_events || 0}</div>
+                  <div className="ds-body-large font-medium text-purple-800 emoji-inline">Upcoming <span className="emoji-large">🔜</span></div>
                 </div>
               </div>
             )}
 
+            {/* Create Club and Proposals Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* Create Club Card */}
+              <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div className="h-2 bg-green-500"></div>
+                <div className="p-6">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-green-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <svg className="ds-icon ds-icon-lg text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <h3 className="ds-heading-2 mb-4">🚀 Create Club</h3>
+                    <p className="ds-body text-gray-600">Submit your club proposal to bring your vision to campus</p>
+                  </div>
+
+                  <button
+                    onClick={() => navigate("/participant/create-club")}
+                    className="ds-button ds-button-primary ds-button-md button-glow w-full"
+                  >
+                    <span className="ds-body emoji-inline">Create New Club <span className="emoji-large">🚀</span></span>
+                    <svg className="ds-icon ds-icon-sm ds-icon-inverse interactive-icon transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+
+                  <div className="mt-4 p-4 bg-green-50 rounded-xl border border-green-200">
+                    <h4 className="font-bold text-gray-900 mb-2 text-sm flex items-center gap-2">
+                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      What you'll need:
+                    </h4>
+                    <ul className="space-y-1 text-xs text-gray-700">
+                      <li>• Club name and description</li>
+                      <li>• Category selection</li>
+                      <li>• Contact information</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* My Proposals Card */}
+              <div className="bg-white rounded-2xl shadow-lg border-2 border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300">
+                <div className="h-2 bg-purple-500"></div>
+                <div className="p-6">
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <svg className="ds-icon ds-icon-lg text-white" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                      </svg>
+                    </div>
+                    <h3 className="ds-heading-2 mb-4">📋 My Proposals</h3>
+                    <p className="ds-body text-gray-600">Track the status of your club creation requests</p>
+                  </div>
+
+                  <button
+                    onClick={() => navigate("/participant/proposals")}
+                    className="ds-button ds-button-primary ds-button-md button-glow w-full"
+                  >
+                    <span className="ds-body emoji-inline">View All Proposals <span className="emoji-large">📋</span></span>
+                    <svg className="ds-icon ds-icon-sm ds-icon-inverse interactive-icon transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+
+                  <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-200">
+                    <h4 className="font-bold text-gray-900 mb-2 text-sm flex items-center gap-2">
+                      <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Status Guide:
+                    </h4>
+                    <div className="space-y-1 text-xs text-gray-700">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <span>Pending - Under review</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span>Approved - Club active</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        <span>Rejected - Needs revision</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Registration History */}
-            <div className="border-t border-gray-200 pt-6">
+            <div className="border-t-2 border-gray-200 pt-6">
               <button
                 onClick={() => setShowRegistrations(!showRegistrations)}
-                className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 rounded-xl transition"
+                className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-2xl transition border-2 border-blue-200"
               >
                 <div className="flex items-center gap-3">
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  <svg className="ds-icon ds-icon-md ds-icon-secondary" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  <span className="font-bold text-gray-900">Registration History</span>
-                  <span className="text-sm text-gray-500">({registrations.length} events)</span>
+                  <span className="ds-body font-medium text-gray-900">Registration History</span>
+                  <span className="ds-body-small text-gray-500">({registrations.length} events)</span>
                 </div>
                 <svg
-                  className={`w-5 h-5 text-gray-600 transition-transform ${showRegistrations ? 'transform rotate-180' : ''}`}
+                  className={`ds-icon ds-icon-sm ds-icon-secondary transition-transform ${showRegistrations ? 'transform rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
+                  strokeWidth={2}
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
 
@@ -372,8 +545,8 @@ export default function MyProfile({ onLogout }) {
                               className="ml-4 p-2 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                               title="View QR Code"
                             >
-                              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                              <svg className="ds-icon ds-icon-sm text-blue-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                               </svg>
                             </a>
                           )}

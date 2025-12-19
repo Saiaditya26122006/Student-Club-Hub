@@ -1,4 +1,4 @@
-# Setup Guide - ClubHub
+# Setup Guide - Student Club-Hub
 
 ## Prerequisites
 
@@ -98,7 +98,7 @@ The backend should now be running at `http://localhost:5000`
 
 You should see:
 ```
-✅ ClubHub API v4.1 running at http://127.0.0.1:5000
+✅ Student Club-Hub API v4.1 running at http://127.0.0.1:5000
 ```
 
 ---

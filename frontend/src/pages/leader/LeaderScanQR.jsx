@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import API from "../../api";
+import "../../styles/DarkPattern.css";
+import "../../styles/DesignSystem.css";
 
 export default function LeaderScanQR() {
   const navigate = useNavigate();
@@ -161,7 +163,7 @@ export default function LeaderScanQR() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="container min-h-screen">
       <style>{`
         @keyframes fadeInUp {
           from {

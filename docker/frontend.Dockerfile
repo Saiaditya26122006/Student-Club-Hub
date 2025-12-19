@@ -1,4 +1,4 @@
-# Frontend Dockerfile for ClubHub React App
+# Frontend Dockerfile for Student Club-Hub React App
 FROM node:18-alpine as build
 
 # Set working directory

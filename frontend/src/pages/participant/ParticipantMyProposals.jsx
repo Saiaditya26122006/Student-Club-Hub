@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../../api";
+import "../../styles/DarkPattern.css";
+import "../../styles/DesignSystem.css";
 
 export default function ParticipantMyProposals() {
   const navigate = useNavigate();
@@ -53,11 +55,11 @@ export default function ParticipantMyProposals() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-12 px-4">
-        <div className="max-w-6xl mx-auto">
+      <div className="container min-h-screen py-16 px-4">
+        <div className="ds-container max-w-6xl">
           <div className="text-center">
-            <div className="inline-block animate-spin minimal-rounded h-12 w-12 border-b-2 border-green-600"></div>
-            <p className="mt-4 text-gray-600">Loading your proposals...</p>
+            <div className="inline-block animate-spin rounded-lg h-12 w-12 border-b-2 border-green-600"></div>
+            <p className="ds-body-large mt-8 text-white">Loading your proposals...</p>
           </div>
         </div>
       </div>
@@ -65,132 +67,108 @@ export default function ParticipantMyProposals() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <style>{`
-        .professional-card {
-          background: white;
-          border: 1px solid #e5e7eb;
-          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-          position: relative;
-          overflow: hidden;
-        }
-        
-        .professional-card::before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 3px;
-          background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
-        }
-        
-        .innovative-border {
-          border: none;
-          border-left: 4px solid #16a34a;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        
-        .minimal-rounded {
-          border-radius: 8px;
-        }
-      `}</style>
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
+    <div className="container min-h-screen py-16 px-4">
+      <div className="ds-container max-w-6xl">
+        <div className="ds-spacing-section">
           <button
             onClick={() => navigate("/participant")}
-            className="text-green-600 hover:text-green-800 mb-4 flex items-center gap-2"
+            className="ds-button ds-button-ghost ds-button-sm mb-8"
           >
             <svg
-              className="w-5 h-5"
+              className="ds-icon ds-icon-sm ds-icon-secondary"
               fill="none"
               stroke="currentColor"
+              strokeWidth={2}
               viewBox="0 0 24 24"
             >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
                 d="M10 19l-7-7m0 0l7-7m-7 7h18"
               />
             </svg>
-            Back to Dashboard
+            <span className="ds-body-small">Back to Dashboard</span>
           </button>
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-800 mb-2">
-                My Club Proposals
-              </h1>
-              <p className="text-gray-600">
-                Track the status of your club proposals
-              </p>
+          {/* Welcome Header - Enhanced 2025 UI */}
+          <div className="relative progressive-blur-card light-ray rounded-2xl p-8 md:p-12 border-2 border-purple-200/50 glow-primary overflow-hidden mb-12 story-reveal">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-purple-200 opacity-30 blur-3xl progressive-blur"></div>
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-pink-200 opacity-30 blur-2xl progressive-blur"></div>
+            <div className="relative z-10 flex items-center justify-between flex-wrap gap-6">
+              <div>
+                <h1 className="typography-hero mb-6 emoji-inline">
+                  My Club Proposals <span className="emoji-xl">📋</span>
+                </h1>
+                <p className="typography-display text-gray-600">
+                  Track the status of your club proposals
+                </p>
+              </div>
+              <button
+                onClick={() => navigate("/participant/create-club")}
+                className="ds-button ds-button-primary ds-button-md button-glow"
+              >
+                <span className="ds-body emoji-inline">+ New Proposal <span className="emoji-large">✨</span></span>
+              </button>
             </div>
-            <button
-              onClick={() => navigate("/participant/create-club")}
-              className="px-6 py-3 bg-green-600 text-white minimal-rounded font-semibold hover:bg-green-700 transition shadow-md"
-            >
-              + New Proposal
-            </button>
           </div>
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-600 border border-red-200 minimal-rounded p-4 mb-6">
-            <p className="text-sm text-red-800">{error}</p>
+          <div className="ds-card bg-red-50 border-l-4 border-red-600 p-6 mb-12">
+            <p className="ds-body text-red-800">{error}</p>
           </div>
         )}
 
         {proposals.length === 0 ? (
-          <div className="professional-card minimal-rounded p-12 text-center">
-            <div className="w-24 h-24 bg-gray-100 minimal-rounded flex items-center justify-center mx-auto mb-6">
+          <div className="ds-card progressive-blur-card p-16 text-center story-reveal illustration-container">
+            <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-10 illustration-3d float-animation">
               <svg
-                className="w-12 h-12 text-gray-400"
+                className="ds-icon ds-icon-xl ds-icon-tertiary"
                 fill="none"
                 stroke="currentColor"
+                strokeWidth={2}
                 viewBox="0 0 24 24"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-2">
-              No Proposals Yet
+            <h3 className="typography-display mb-6 emoji-inline">
+              No Proposals Yet <span className="emoji-xl">📝</span>
             </h3>
-            <p className="text-gray-600 mb-6">
+            <p className="ds-body-large mb-12">
               You haven't submitted any club proposals yet.
             </p>
             <button
               onClick={() => navigate("/participant/create-club")}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+              className="ds-button ds-button-primary ds-button-lg button-glow"
             >
-              Create Your First Proposal
+              <span className="ds-body emoji-inline">Create Your First Proposal <span className="emoji-large">🚀</span></span>
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
-            {proposals.map((proposal) => (
+          <div className="bento-grid">
+            {proposals.map((proposal, index) => (
               <div
                 key={proposal.id}
-                className="professional-card minimal-rounded p-6 hover:shadow-lg transition"
+                className={`bento-item card-3d-interactive progressive-blur-card story-reveal story-reveal-delay-${Math.min(index % 4, 4)} p-10`}
               >
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between mb-8">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-2xl font-bold text-gray-800">
+                    <div className="flex items-center gap-4 mb-4 flex-wrap">
+                      <h3 className="typography-display">
                         {proposal.name}
                       </h3>
                       {getStatusBadge(proposal.status)}
                     </div>
                     {proposal.category && (
-                      <p className="text-sm text-gray-500 mb-2">
+                      <p className="ds-body-small mb-4">
                         Category: {proposal.category}
                       </p>
                     )}
-                    <p className="text-gray-600">{proposal.description}</p>
+                    <p className="ds-body-large">{proposal.description}</p>
                   </div>
                 </div>
 
@@ -198,33 +176,33 @@ export default function ParticipantMyProposals() {
                 {(proposal.mission ||
                   proposal.target_audience ||
                   proposal.activities_plan) && (
-                  <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                  <div className="mt-8 pt-8 border-t border-gray-200 space-y-6">
                     {proposal.mission && (
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                        <h4 className="ds-heading-4 mb-3">
                           Mission:
                         </h4>
-                        <p className="text-sm text-gray-600">
+                        <p className="ds-body">
                           {proposal.mission}
                         </p>
                       </div>
                     )}
                     {proposal.target_audience && (
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                        <h4 className="ds-heading-4 mb-3">
                           Target Audience:
                         </h4>
-                        <p className="text-sm text-gray-600">
+                        <p className="ds-body">
                           {proposal.target_audience}
                         </p>
                       </div>
                     )}
                     {proposal.activities_plan && (
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-700 mb-1">
+                        <h4 className="ds-heading-4 mb-3">
                           Planned Activities:
                         </h4>
-                        <p className="text-sm text-gray-600">
+                        <p className="ds-body">
                           {proposal.activities_plan}
                         </p>
                       </div>
@@ -280,9 +258,9 @@ export default function ParticipantMyProposals() {
                         </div>
                         <button
                           onClick={() => navigate("/login")}
-                          className="w-full mt-3 px-4 py-2 bg-green-600 text-white minimal-rounded font-semibold hover:bg-green-700 transition shadow-sm"
+                          className="ds-button ds-button-primary ds-button-md button-glow w-full mt-3"
                         >
-                          Login as Club Leader
+                          <span className="ds-body emoji-inline">Login as Club Leader <span className="emoji-large">🔑</span></span>
                         </button>
                       </div>
                     )}
@@ -296,7 +274,7 @@ export default function ParticipantMyProposals() {
                 )}
 
                 {/* Status Info */}
-                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between text-sm text-gray-500">
+                <div className="mt-8 pt-8 border-t border-gray-200 flex items-center justify-between ds-body-small">
                   <span>Submitted: {formatDate(proposal.created_at)}</span>
                   {proposal.status === "pending" && (
                     <span className="text-yellow-600 font-medium">
